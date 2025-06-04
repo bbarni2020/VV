@@ -4,7 +4,7 @@ import Explosion from './explosion.js';
 import Map from './map.js';
 import input from './input.js';
 import { bounceOffWalls } from './physics.js';
-import { sendPlayerAction, sendPlayerInfo, getAuthenticationStatus, getOtherPlayers, socket } from './multiplayer.js';
+import { sendPlayerAction, sendPlayerInfo, getAuthenticationStatus, getOtherPlayers, socket, updateOtherPlayers, playerName } from './multiplayer.js';
 
 let lastPlayerInfoSent = 0;
 const playerInfoInterval = 100;
@@ -63,6 +63,8 @@ function gameLoop(timestamp) {
 }
 
 function update(deltaTime) {
+    updateOtherPlayers(deltaTime);
+    
     let playerMoved = false;
 
     if (input.isKeyPressed('KeyW') || input.isKeyPressed('ArrowUp')) {
@@ -125,6 +127,10 @@ function update(deltaTime) {
     
     document.getElementById('score').textContent = score;
     document.getElementById('bulletCount').textContent = bullets.length;
+    
+    const otherPlayers = getOtherPlayers();
+    const totalPlayers = Object.keys(otherPlayers).length + 1;
+    document.getElementById('playerCount').textContent = totalPlayers;
 }
 
 function drawBackground(ctx, cameraX, cameraY) {
@@ -174,11 +180,12 @@ function drawBackground(ctx, cameraX, cameraY) {
 function drawOtherPlayer(ctx, playerData, cameraX, cameraY) {
     const size = 20;
     const time = Date.now() * 0.005;
-    const walkBob = Math.sin(time + playerData.position.x * 0.01) * 1.2;
-    const walkSquish = 1 + Math.sin(time * 2 + playerData.position.y * 0.01) * 0.06;
+    const displayPos = playerData.displayPosition || playerData.position;
+    const walkBob = Math.sin(time + displayPos.x * 0.01) * 1.2;
+    const walkSquish = 1 + Math.sin(time * 2 + displayPos.y * 0.01) * 0.06;
     
-    const baseX = playerData.position.x - size / 2 - cameraX;
-    const baseY = playerData.position.y - size / 2 - cameraY;
+    const baseX = displayPos.x - size / 2 - cameraX;
+    const baseY = displayPos.y - size / 2 - cameraY;
     
     const x = baseX + Math.sin(time * 0.5) * 0.3;
     const y = baseY + walkBob;
@@ -186,9 +193,22 @@ function drawOtherPlayer(ctx, playerData, cameraX, cameraY) {
     const width = size * walkSquish;
     const height = size / walkSquish;
     
+    const playerNameText = playerData.name || 'PLAYER';
+    const nameWidth = playerNameText.length * 6;
+    
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(x + width/2 - nameWidth/2 - 2, y - 15, nameWidth + 4, 8);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(playerNameText, x + width/2, y - 9);
+    
     ctx.save();
     ctx.translate(x + width/2, y + height/2);
     ctx.rotate(Math.sin(time * 0.8) * 0.02);
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-width/2 - 2, -height/2 - 2, width + 4, height + 4);
     
     ctx.fillStyle = '#000000';
     ctx.fillRect(-width/2 - 1, -height/2 - 1, width + 2, height + 2);
@@ -211,6 +231,15 @@ function drawOtherPlayer(ctx, playerData, cameraX, cameraY) {
     const blushIntensity = Math.abs(Math.sin(time * 0.4)) * 0.6 + 0.4;
     ctx.fillStyle = `rgba(255, 204, 203, ${blushIntensity})`;
     ctx.fillRect(-width/2 + 2, -height/2 + 2, width - 4, 3);
+    
+    if (Math.sin(time * 4) > 0.7) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        for (let i = 0; i < 2; i++) {
+            const sparkleX = -width/2 + Math.random() * width;
+            const sparkleY = -height/2 + Math.random() * height;
+            ctx.fillRect(sparkleX, sparkleY, 1, 1);
+        }
+    }
     
     ctx.restore();
 }
@@ -286,6 +315,12 @@ window.addEventListener('keydown', (event) => {
             position: { x: player.position.x, y: player.position.y },
             velocity: { x: 0, y: -8 },
             timestamp: Date.now()
+        });
+    }
+    
+    if (event.code === 'KeyM') {
+        import('./multiplayer.js').then(module => {
+            module.debugMultiplayerState();
         });
     }
 });
