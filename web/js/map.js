@@ -1,7 +1,9 @@
+import { mapData } from './mapdata.js';
+
 class Map {
     constructor(width, height) {
-        this.width = width * 3;
-        this.height = height * 3;
+        this.width = width;
+        this.height = height;
         this.tileSize = 32;
         this.walls = [];
         this.movingPlatforms = [];
@@ -16,357 +18,51 @@ class Map {
         this.teleporters = [];
         this.destructibleWalls = [];
         
-        this.createBorderWalls();
-        this.createInteriorWalls();
-    }
-
-    createBorderWalls() {
-        const cols = Math.floor(this.width / this.tileSize);
-        const rows = Math.floor(this.height / this.tileSize);
-        
-        for (let x = 0; x < cols; x++) {
-            this.walls.push({
-                x: x * this.tileSize,
-                y: 0,
-                width: this.tileSize,
-                height: this.tileSize,
-                type: 'solid'
-            });
-            this.walls.push({
-                x: x * this.tileSize,
-                y: (rows - 1) * this.tileSize,
-                width: this.tileSize,
-                height: this.tileSize,
-                type: 'solid'
-            });
-        }
-        
-        for (let y = 1; y < rows - 1; y++) {
-            this.walls.push({
-                x: 0,
-                y: y * this.tileSize,
-                width: this.tileSize,
-                height: this.tileSize,
-                type: 'solid'
-            });
-            this.walls.push({
-                x: (cols - 1) * this.tileSize,
-                y: y * this.tileSize,
-                width: this.tileSize,
-                height: this.tileSize,
-                type: 'solid'
-            });
-        }
-    }
-
-    createInteriorWalls() {
-        const cols = Math.floor(this.width / this.tileSize);
-        const rows = Math.floor(this.height / this.tileSize);
-        
-        this.createFortressSection(cols, rows);
-        this.createLabyrinthSection(cols, rows);
-        this.createTeleporterHubSection(cols, rows);
-        this.createMovingPlatformSection(cols, rows);
-        this.createDestructibleSection(cols, rows);
-        this.createHazardSection(cols, rows);
-        this.createCrystalCaveSection(cols, rows);
-        this.createMechanicalSection(cols, rows);
-        this.createGraveyardSection(cols, rows);
-        this.createPortalSection(cols, rows);
-    }
-
-    createFortressSection(cols, rows) {
-        const centerX = 12;
-        const centerY = 8;
-        const size = 12;
-        
-        for (let x = centerX - size/2; x <= centerX + size/2; x++) {
-            this.addWall(x, centerY - size/2, 'solid');
-            this.addWall(x, centerY + size/2, 'solid');
-        }
-        for (let y = centerY - size/2; y <= centerY + size/2; y++) {
-            this.addWall(centerX - size/2, y, 'solid');
-            this.addWall(centerX + size/2, y, 'solid');
-        }
-        
-        this.addWall(centerX - size/2 - 1, centerY - size/2 - 1, 'solid');
-        this.addWall(centerX + size/2 + 1, centerY - size/2 - 1, 'solid');
-        this.addWall(centerX - size/2 - 1, centerY + size/2 + 1, 'solid');
-        this.addWall(centerX + size/2 + 1, centerY + size/2 + 1, 'solid');
-        
-        for (let x = centerX - 2; x <= centerX + 2; x++) {
-            this.addWall(x, centerY - 2, 'destructible');
-            this.addWall(x, centerY + 2, 'destructible');
-        }
-        
-        // Central keep
-        this.addWall(centerX, centerY, 'bouncy');
-        this.addWall(centerX - 1, centerY, 'hazard');
-        this.addWall(centerX + 1, centerY, 'hazard');
-    }
-
-    createLabyrinthSection(cols, rows) {
-        const startX = cols - 18;
-        const startY = 4;
-        
-        const mazePattern = [
-            [1,1,1,1,0,1,1,1,1,1,1,1,1,1,1],
-            [1,0,0,3,0,0,0,2,0,0,0,3,0,0,1],
-            [1,0,1,1,0,1,1,1,1,1,0,1,1,0,1],
-            [1,0,1,0,0,0,2,0,0,0,0,0,1,0,1],
-            [1,0,1,0,1,1,0,1,1,0,1,1,1,0,1],
-            [1,0,0,0,1,2,0,0,1,0,2,0,0,0,1],
-            [1,0,1,1,1,0,1,0,1,0,1,1,1,0,1],
-            [1,0,0,3,0,0,1,0,1,0,0,3,0,0,1],
-            [1,1,1,1,1,1,1,2,1,1,1,1,1,1,1]
-        ];
-        
-        mazePattern.forEach((row, y) => {
-            row.forEach((cell, x) => {
-                if (cell > 0 && startX + x < cols && startY + y < rows) {
-                    const wallType = cell === 1 ? 'solid' : cell === 2 ? 'destructible' : 'bouncy';
-                    this.addWall(startX + x, startY + y, wallType);
-                }
-            });
-        });
-    }
-
-    createTeleporterHubSection(cols, rows) {
-        const centerX = Math.floor(cols * 0.3);
-        const centerY = Math.floor(rows * 0.7);
-        
-        this.addWall(centerX, centerY, 'teleporter');
-        this.teleporters.push({
-            x: centerX * this.tileSize,
-            y: centerY * this.tileSize,
-            id: 'hub',
-            destinations: ['north', 'south', 'east', 'west']
-        });
-        
-        const destinations = [
-            { x: centerX, y: centerY - 8, id: 'north' },
-            { x: centerX, y: centerY + 8, id: 'south' },
-            { x: centerX + 8, y: centerY, id: 'east' },
-            { x: centerX - 8, y: centerY, id: 'west' }
-        ];
-        
-        destinations.forEach(dest => {
-            this.addWall(dest.x, dest.y, 'teleporter');
-            this.teleporters.push({
-                x: dest.x * this.tileSize,
-                y: dest.y * this.tileSize,
-                id: dest.id,
-                destinations: ['hub']
-            });
-            
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dy = -1; dy <= 1; dy++) {
-                    if (dx !== 0 || dy !== 0) {
-                        this.addWall(dest.x + dx, dest.y + dy, 'bouncy');
-                    }
-                }
-            }
-        });
-    }
-
-    createMovingPlatformSection(cols, rows) {
-        const baseY = Math.floor(rows * 0.4);
-        const startX = Math.floor(cols * 0.6);
-        
-        for (let i = 0; i < 3; i++) {
-            const trackY = baseY + i * 6;
-            const trackLength = 15;
-            
-
-            for (let x = 0; x < trackLength; x++) {
-                this.addWall(startX + x, trackY - 2, 'solid');
-                this.addWall(startX + x, trackY + 2, 'solid');
-            }
-            
-            this.movingPlatforms.push({
-                x: startX * this.tileSize,
-                y: trackY * this.tileSize,
-                width: this.tileSize * 3,
-                height: this.tileSize,
-                startX: startX * this.tileSize,
-                endX: (startX + trackLength - 3) * this.tileSize,
-                speed: 50 + i * 20,
-                direction: i % 2 === 0 ? 1 : -1
-            });
-        }
-        
-        for (let i = 0; i < 2; i++) {
-            const hazardY = baseY + 3 + i * 6;
-            for (let x = 0; x < 12; x++) {
-                if (x % 3 === 0) {
-                    this.addWall(startX + x + 2, hazardY, 'hazard');
+        for (let y = 0; y < mapData.length; y++) {
+            for (let x = 0; x < mapData[y].length; x++) {
+                const tile = mapData[y][x];
+                if (tile !== 0) {
+                    this.addWall(x, y, this.getTileType(tile));
                 }
             }
         }
     }
 
-    createDestructibleSection(cols, rows) {
-        const startX = 5;
-        const startY = Math.floor(rows * 0.6);
-        
-        const pattern = [
-            [2,2,2,2,2,2,2,2,2,2],
-            [2,0,0,2,0,0,2,0,0,2],
-            [2,0,1,2,1,0,2,1,0,2],
-            [2,2,2,0,2,2,0,2,2,2],
-            [2,0,0,0,2,0,0,0,0,2],
-            [2,0,1,2,2,2,2,1,0,2],
-            [2,0,0,0,0,0,0,0,0,2],
-            [2,2,2,2,2,2,2,2,2,2]
-        ];
-        
-        pattern.forEach((row, y) => {
-            row.forEach((cell, x) => {
-                if (cell > 0) {
-                    const wallType = cell === 1 ? 'solid' : 'destructible';
-                    this.addWall(startX + x, startY + y, wallType);
-                }
-            });
-        });
-    }
-
-    createHazardSection(cols, rows) {
-        const centerX = Math.floor(cols * 0.8);
-        const centerY = Math.floor(rows * 0.3);
-        
-        for (let x = -6; x <= 6; x++) {
-            for (let y = -4; y <= 4; y++) {
-                if (Math.abs(x) === 6 || Math.abs(y) === 4) {
-                    this.addWall(centerX + x, centerY + y, 'solid');
-                } else if ((x + y) % 3 === 0) {
-                    this.addWall(centerX + x, centerY + y, 'bouncy');
-                } else if (Math.abs(x) < 5 && Math.abs(y) < 3) {
-                    this.addWall(centerX + x, centerY + y, 'hazard');
-                }
-            }
+    getTileType(tile) {
+        switch (tile) {
+            case 1: return 'bouncy';
+            case 2: return 'solid';
+            case 3: return 'destructible';
+            case 4: return 'teleporter';
+            case 5: return 'hazard';
+            default: return 'solid';
         }
-    }
-
-    createCrystalCaveSection(cols, rows) {
-        const centerX = Math.floor(cols * 0.15);
-        const centerY = Math.floor(rows * 0.25);
-        
-        const crystalSizes = [3, 5, 4, 6, 3];
-        crystalSizes.forEach((size, i) => {
-            const angle = (i / crystalSizes.length) * Math.PI * 2;
-            const distance = 8;
-            const crystalX = Math.round(centerX + Math.cos(angle) * distance);
-            const crystalY = Math.round(centerY + Math.sin(angle) * distance);
-            
-            for (let x = -Math.floor(size/2); x <= Math.floor(size/2); x++) {
-                for (let y = -Math.floor(size/2); y <= Math.floor(size/2); y++) {
-                    if (Math.abs(x) + Math.abs(y) <= Math.floor(size/2)) {
-                        this.addWall(crystalX + x, crystalY + y, 'bouncy');
-                    }
-                }
-            }
-        });
-        
-        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 16) {
-            const radius = 12 + Math.sin(angle * 3) * 2;
-            const x = Math.round(centerX + Math.cos(angle) * radius);
-            const y = Math.round(centerY + Math.sin(angle) * radius);
-            this.addWall(x, y, 'solid');
-        }
-    }
-
-    createMechanicalSection(cols, rows) {
-        const startX = Math.floor(cols * 0.4);
-        const startY = Math.floor(rows * 0.85);
-        
-        for (let i = 0; i < 5; i++) {
-            const gearX = startX + i * 4;
-            const gearY = startY;
-            
-            for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
-                const x = Math.round(gearX + Math.cos(angle) * 2);
-                const y = Math.round(gearY + Math.sin(angle) * 2);
-                this.addWall(x, y, 'solid');
-            }
-            
-            this.addWall(gearX, gearY, 'bouncy');
-            
-            if (i % 2 === 0) {
-                this.addWall(gearX, gearY - 4, 'destructible');
-                this.addWall(gearX, gearY + 4, 'destructible');
-            }
-        }
-    }
-
-    createGraveyardSection(cols, rows) {
-        const startX = Math.floor(cols * 0.05);
-        const startY = Math.floor(rows * 0.5);
-        
-        for (let i = 0; i < 12; i++) {
-            const tombX = startX + (i % 4) * 3 + Math.floor(i / 4) * 10;
-            const tombY = startY + (i % 3) * 4;
-            
-            this.addWall(tombX, tombY, 'solid');
-            this.addWall(tombX, tombY - 1, 'solid');
-            
-            if (i % 3 === 0) {
-                this.addWall(tombX - 1, tombY, 'hazard');
-                this.addWall(tombX + 1, tombY, 'hazard');
-            }
-        }
-        
-        const cryptX = startX + 6;
-        const cryptY = startY - 3;
-        for (let x = -2; x <= 2; x++) {
-            for (let y = -2; y <= 2; y++) {
-                if (Math.abs(x) === 2 || Math.abs(y) === 2) {
-                    this.addWall(cryptX + x, cryptY + y, 'solid');
-                } else if (x === 0 && y === 0) {
-                    this.addWall(cryptX + x, cryptY + y, 'teleporter');
-                }
-            }
-        }
-    }
-
-    createPortalSection(cols, rows) {
-        const centerX = Math.floor(cols * 0.9);
-        const centerY = Math.floor(rows * 0.8);
-        
-        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 12) {
-            const radius = 5;
-            const x = Math.round(centerX + Math.cos(angle) * radius);
-            const y = Math.round(centerY + Math.sin(angle) * radius);
-            this.addWall(x, y, 'bouncy');
-            
-            if (angle % (Math.PI / 3) < 0.1) {
-                this.addWall(x, y, 'hazard');
-            }
-        }
-
-        this.addWall(centerX, centerY - 8, 'teleporter');
-        this.addWall(centerX, centerY + 8, 'teleporter');
-        this.addWall(centerX - 8, centerY, 'teleporter');
-        this.addWall(centerX + 8, centerY, 'teleporter');
     }
 
     addWall(x, y, type) {
-        if (x >= 0 && y >= 0 && x < Math.floor(this.width / this.tileSize) && y < Math.floor(this.height / this.tileSize)) {
-            const wall = {
+        const wall = {
+            x: x * this.tileSize,
+            y: y * this.tileSize,
+            width: this.tileSize,
+            height: this.tileSize,
+            type: type
+        };
+        
+        if (type === 'destructible') {
+            wall.health = 3;
+            wall.maxHealth = 3;
+            this.destructibleWalls.push(wall);
+        }
+        
+        if (type === 'teleporter') {
+            this.teleporters.push({
                 x: x * this.tileSize,
                 y: y * this.tileSize,
-                width: this.tileSize,
-                height: this.tileSize,
-                type: type
-            };
-            
-            if (type === 'destructible') {
-                wall.health = 3;
-                wall.maxHealth = 3;
-                this.destructibleWalls.push(wall);
-            }
-            
-            this.walls.push(wall);
+                id: 'teleporter_' + x + '_' + y
+            });
         }
+        
+        this.walls.push(wall);
     }
 
     getSafeSpawnPosition(playerSize) {
@@ -374,12 +70,12 @@ class Map {
         const rows = Math.floor(this.height / this.tileSize);
         
         const spawnCandidates = [
-            { x: 3 * this.tileSize, y: 2 * this.tileSize },
-            { x: (cols - 4) * this.tileSize, y: 2 * this.tileSize },
-            { x: 3 * this.tileSize, y: (rows - 3) * this.tileSize },
-            { x: (cols - 4) * this.tileSize, y: (rows - 3) * this.tileSize },
-            { x: 2 * this.tileSize, y: Math.floor(rows/2) * this.tileSize },
-            { x: (cols - 3) * this.tileSize, y: Math.floor(rows/2) * this.tileSize },
+            { x: 2 * this.tileSize, y: 2 * this.tileSize },
+            { x: (cols - 3) * this.tileSize, y: 2 * this.tileSize },
+            { x: 2 * this.tileSize, y: (rows - 3) * this.tileSize },
+            { x: (cols - 3) * this.tileSize, y: (rows - 3) * this.tileSize },
+            { x: Math.floor(cols/2) * this.tileSize, y: 2 * this.tileSize },
+            { x: 2 * this.tileSize, y: Math.floor(rows/2) * this.tileSize }
         ];
         
         for (let candidate of spawnCandidates) {
@@ -447,9 +143,9 @@ class Map {
                 const deltaY = bulletCenterY - wallCenterY;
                 
                 if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                    bullet.velocity.x *= -1;
+                    bullet.velocity.x *= -1.1;
                 } else {
-                    bullet.velocity.y *= -1;
+                    bullet.velocity.y *= -1.1;
                 }
                 
                 bullet.bounceCount++;

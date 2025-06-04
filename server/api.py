@@ -11,6 +11,7 @@ socketio = SocketIO(app, cors_allowed_origins='*')
 
 player_sessions = {}
 player_tokens = {}
+players_data = {}
 
 @socketio.on('connect')
 def handle_connect():
@@ -21,9 +22,16 @@ def handle_disconnect():
     print(f'Client disconnected: {request.sid}')
     if request.sid in player_sessions:
         session = player_sessions[request.sid]
+        player_id = session.get('playerId')
+        if player_id in players_data:
+            del players_data[player_id]
+            emit('player_disconnected', {'playerId': player_id}, broadcast=True)
+        
         if session['token'] in player_tokens:
             del player_tokens[session['token']]
         del player_sessions[request.sid]
+        
+        print(f'Player session ended: {player_id}')
 
 @socketio.on('request_auth')
 def handle_request_auth():
@@ -41,13 +49,25 @@ def handle_request_auth():
         'socket_id': request.sid
     }
 
+    players_data[player_id] = {
+        'position': {'x': 400 + (len(players_data) * 50), 'y': 300 + (len(players_data) * 30)},
+        'score': 0,
+        'bulletCount': 0,
+        'lastUpdate': time.time() * 1000
+    }
+
     emit('auth_success', {'token': token, 'playerId': player_id})
+
+    emit('players_data', {'players': players_data})
+
+    emit('player_joined', {'playerId': player_id, 'data': players_data[player_id]}, broadcast=True, include_self=False)
+
     print(f'New player connected: {player_id}')
 
 @socketio.on('authenticate')
 def handle_authenticate(data):
     token = data.get('token')
-    player_id = data.get('playerId')
+    player_id = data.get('id')
 
     if token in player_tokens and player_tokens[token]['playerId'] == player_id:
         player_tokens[token]['socket_id'] = request.sid
@@ -56,8 +76,19 @@ def handle_authenticate(data):
             'token': token,
             'authenticated': True
         }
+        if player_id not in players_data:
+            players_data[player_id] = {
+                'position': {'x': 400 + (len(players_data) * 50), 'y': 300 + (len(players_data) * 30)},
+                'score': 0,
+                'bulletCount': 0,
+                'lastUpdate': time.time() * 1000
+            }
 
         emit('auth_success', {'token': token, 'playerId': player_id})
+
+        emit('players_data', {'players': players_data})
+
+        emit('player_joined', {'playerId': player_id, 'data': players_data[player_id]}, broadcast=True, include_self=False)
         print(f'Player reconnected: {player_id}')
     else:
         emit('auth_failed')
@@ -106,14 +137,19 @@ def handle_player_info_update(data):
         print(f'Invalid request from {request.sid}')
         return
     
-    player_info = data.get('playerInfo', {})
+    player_info = data.get('data', {})
     player_id = data.get('playerId')
+
+    if player_id in players_data:
+        players_data[player_id].update(player_info)
+        players_data[player_id]['lastUpdate'] = time.time() * 1000
+        
 
     print(f'Valid player info update from {request.sid}')
 
     emit('player_info_update', {
         'playerId': player_id,
-        'info': player_info}, broadcast=True, include_self=False)
+        'data': player_info}, broadcast=True, include_self=False)
 
 if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0", port=7895, debug=True)

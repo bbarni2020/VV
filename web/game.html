@@ -17,6 +17,20 @@
         WASD/ARROWS: MOVE | CLICK: SHOOT | SPACE: SHOOT UP<br>
         GRAY: SOLID WALLS | GREEN: BOUNCY WALLS
     </div>
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-container">
+            <div class="loading-title">VIVID VIOLENCE</div>
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+            </div>
+            <div class="loading-text">INITIALIZING MULTIPLAYER...</div>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+        </div>
+    </div>
     <canvas id="gameCanvas"></canvas>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
     <script type="module" src="js/multiplayer.js"></script>

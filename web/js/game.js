@@ -4,7 +4,7 @@ import Explosion from './explosion.js';
 import Map from './map.js';
 import input from './input.js';
 import { bounceOffWalls } from './physics.js';
-import { sendPlayerAction, sendPlayerInfo, getAuthenticationStatus } from './multiplayer.js';
+import { sendPlayerAction, sendPlayerInfo, getAuthenticationStatus, getOtherPlayers, socket } from './multiplayer.js';
 
 let lastPlayerInfoSent = 0;
 const playerInfoInterval = 100;
@@ -15,15 +15,30 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const gameMap = new Map(canvas.width, canvas.height);
+const FIXED_MAP_WIDTH = 1280;
+const FIXED_MAP_HEIGHT = 720;
+const gameMap = new Map(FIXED_MAP_WIDTH, FIXED_MAP_HEIGHT);
 
 const safeSpawn = gameMap.getSafeSpawnPosition(20);
 const player = new Player(safeSpawn.x, safeSpawn.y, 5);
 const bullets = [];
 const explosions = [];
+const otherPlayerBullets = [];
 
 let score = 0;
 let lastTime = 0;
+
+socket.on('player_action', (data) => {
+    if (data.action.type === 'shoot') {
+        const bulletData = data.action;
+        otherPlayerBullets.push(new Bullet(
+            bulletData.position.x, 
+            bulletData.position.y, 
+            bulletData.velocity.x, 
+            bulletData.velocity.y
+        ));
+    }
+});
 
 const camera = {
     x: 0,
@@ -66,6 +81,7 @@ function update(deltaTime) {
         player.move('right', gameMap);
         playerMoved = true;
     }
+    
     const now = Date.now();
     if (now-lastPlayerInfoSent > playerInfoInterval && getAuthenticationStatus()) {
         sendPlayerInfo({
@@ -77,7 +93,6 @@ function update(deltaTime) {
         lastPlayerInfoSent = now
     }
 
-
     camera.update(player, gameMap.width, gameMap.height, canvas.width, canvas.height);
 
     for (let i = bullets.length - 1; i >= 0; i--) {
@@ -88,6 +103,16 @@ function update(deltaTime) {
             explosions.push(new Explosion(bullets[i].position.x, bullets[i].position.y));
             bullets.splice(i, 1);
             score += 10;
+        }
+    }
+    
+    for (let i = otherPlayerBullets.length - 1; i >= 0; i--) {
+        otherPlayerBullets[i].update();
+        const shouldRemove = bounceOffWalls(otherPlayerBullets[i], gameMap.width, gameMap.height, gameMap);
+        
+        if (shouldRemove) {
+            explosions.push(new Explosion(otherPlayerBullets[i].position.x, otherPlayerBullets[i].position.y));
+            otherPlayerBullets.splice(i, 1);
         }
     }
     
@@ -113,29 +138,29 @@ function drawBackground(ctx, cameraX, cameraY) {
     const endX = startX + canvas.width + gridSize;
     const endY = startY + canvas.height + gridSize;
     
-    for (let x = startX; x <= endX; x += gridSize) {
+    for (let x = 0; x <= FIXED_MAP_WIDTH; x += gridSize) {
         const screenX = x - cameraX;
         if (screenX >= -gridSize && screenX <= canvas.width + gridSize) {
             ctx.beginPath();
-            ctx.moveTo(screenX, 0);
-            ctx.lineTo(screenX, canvas.height);
+            ctx.moveTo(screenX, Math.max(0, -cameraY));
+            ctx.lineTo(screenX, Math.min(canvas.height, FIXED_MAP_HEIGHT - cameraY));
             ctx.stroke();
         }
     }
     
-    for (let y = startY; y <= endY; y += gridSize) {
+    for (let y = 0; y <= FIXED_MAP_HEIGHT; y += gridSize) {
         const screenY = y - cameraY;
         if (screenY >= -gridSize && screenY <= canvas.height + gridSize) {
             ctx.beginPath();
-            ctx.moveTo(0, screenY);
-            ctx.lineTo(canvas.width, screenY);
+            ctx.moveTo(Math.max(0, -cameraX), screenY);
+            ctx.lineTo(Math.min(canvas.width, FIXED_MAP_WIDTH - cameraX), screenY);
             ctx.stroke();
         }
     }
     
     ctx.fillStyle = 'rgba(100, 200, 255, 0.05)';
-    for (let x = startX; x <= endX; x += gridSize * 4) {
-        for (let y = startY; y <= endY; y += gridSize * 4) {
+    for (let x = 0; x <= FIXED_MAP_WIDTH; x += gridSize * 4) {
+        for (let y = 0; y <= FIXED_MAP_HEIGHT; y += gridSize * 4) {
             const screenX = x - cameraX;
             const screenY = y - cameraY;
             if (screenX >= -gridSize && screenX <= canvas.width && 
@@ -144,6 +169,50 @@ function drawBackground(ctx, cameraX, cameraY) {
             }
         }
     }
+}
+
+function drawOtherPlayer(ctx, playerData, cameraX, cameraY) {
+    const size = 20;
+    const time = Date.now() * 0.005;
+    const walkBob = Math.sin(time + playerData.position.x * 0.01) * 1.2;
+    const walkSquish = 1 + Math.sin(time * 2 + playerData.position.y * 0.01) * 0.06;
+    
+    const baseX = playerData.position.x - size / 2 - cameraX;
+    const baseY = playerData.position.y - size / 2 - cameraY;
+    
+    const x = baseX + Math.sin(time * 0.5) * 0.3;
+    const y = baseY + walkBob;
+    
+    const width = size * walkSquish;
+    const height = size / walkSquish;
+    
+    ctx.save();
+    ctx.translate(x + width/2, y + height/2);
+    ctx.rotate(Math.sin(time * 0.8) * 0.02);
+    
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(-width/2 - 1, -height/2 - 1, width + 2, height + 2);
+    
+    ctx.fillStyle = '#ff6b6b';
+    ctx.fillRect(-width/2, -height/2, width, height);
+    
+    const eyeSize = 3 + Math.sin(time * 3) * 0.2;
+    const eyeY = -height/2 + 4 + Math.sin(time) * 0.3;
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-width/2 + 4, eyeY, eyeSize, eyeSize);
+    ctx.fillRect(width/2 - 7, eyeY, eyeSize, eyeSize);
+    
+    ctx.fillStyle = '#000000';
+    const pupilOffset = Math.sin(time * 0.3) * 0.4;
+    ctx.fillRect(-width/2 + 5 + pupilOffset, eyeY + 1, 1, 1);
+    ctx.fillRect(width/2 - 6 + pupilOffset, eyeY + 1, 1, 1);
+    
+    const blushIntensity = Math.abs(Math.sin(time * 0.4)) * 0.6 + 0.4;
+    ctx.fillStyle = `rgba(255, 204, 203, ${blushIntensity})`;
+    ctx.fillRect(-width/2 + 2, -height/2 + 2, width - 4, 3);
+    
+    ctx.restore();
 }
 
 function render() {
@@ -156,9 +225,36 @@ function render() {
     
     player.draw(ctx, camera.x, camera.y);
     
+    const otherPlayers = getOtherPlayers();
+    Object.keys(otherPlayers).forEach(playerId => {
+        drawOtherPlayer(ctx, otherPlayers[playerId], camera.x, camera.y);
+    });
+    
     bullets.forEach(bullet => {
         bullet.draw(ctx, camera.x, camera.y);
     });
+    
+    ctx.save();
+    otherPlayerBullets.forEach(bullet => {
+        const x = bullet.position.x - bullet.radius - camera.x;
+        const y = bullet.position.y - bullet.radius - camera.y;
+        
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(x + bullet.radius, y + bullet.radius, bullet.radius + 1, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#ff6b6b';
+        ctx.beginPath();
+        ctx.arc(x + bullet.radius, y + bullet.radius, bullet.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(x + bullet.radius - 1, y + bullet.radius - 1, 1, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.restore();
     
     explosions.forEach(explosion => {
         explosion.draw(ctx, camera.x, camera.y);
@@ -194,4 +290,23 @@ window.addEventListener('keydown', (event) => {
     }
 });
 
-requestAnimationFrame(gameLoop);
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
+function hideLoadingScreen() {
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        loadingScreen.style.transition = 'opacity 0.5s ease-out';
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+        }, 500);
+    }
+}
+
+setTimeout(() => {
+    hideLoadingScreen();
+    requestAnimationFrame(gameLoop);
+}, 3000);
