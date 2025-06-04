@@ -4,6 +4,10 @@ import Explosion from './explosion.js';
 import Map from './map.js';
 import input from './input.js';
 import { bounceOffWalls } from './physics.js';
+import { sendPlayerAction, sendPlayerInfo, getAuthenticationStatus } from './multiplayer.js';
+
+let lastPlayerInfoSent = 0;
+const playerInfoInterval = 100;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -44,18 +48,35 @@ function gameLoop(timestamp) {
 }
 
 function update(deltaTime) {
+    let playerMoved = false;
+
     if (input.isKeyPressed('KeyW') || input.isKeyPressed('ArrowUp')) {
         player.move('up', gameMap);
+        playerMoved = true;
     }
     if (input.isKeyPressed('KeyS') || input.isKeyPressed('ArrowDown')) {
         player.move('down', gameMap);
+        playerMoved = true;
     }
     if (input.isKeyPressed('KeyA') || input.isKeyPressed('ArrowLeft')) {
         player.move('left', gameMap);
+        playerMoved = true;
     }
     if (input.isKeyPressed('KeyD') || input.isKeyPressed('ArrowRight')) {
         player.move('right', gameMap);
+        playerMoved = true;
     }
+    const now = Date.now();
+    if (now-lastPlayerInfoSent > playerInfoInterval && getAuthenticationStatus()) {
+        sendPlayerInfo({
+            position: player.position,
+            score: score,
+            bulletCount: bullets.length,
+            timestamp: now
+        });
+        lastPlayerInfoSent = now
+    }
+
 
     camera.update(player, gameMap.width, gameMap.height, canvas.width, canvas.height);
 
@@ -151,12 +172,25 @@ canvas.addEventListener('click', (event) => {
     
     const bulletData = player.shoot(mouseX, mouseY);
     bullets.push(new Bullet(bulletData.x, bulletData.y, bulletData.velocityX, bulletData.velocityY));
+
+    sendPlayerAction({
+        type: 'shoot',
+        position: { x: bulletData.x, y: bulletData.y },
+        velocity: { x: bulletData.velocityX, y: bulletData.velocityY },
+        timestamp: Date.now()
+    })
 });
 
 window.addEventListener('keydown', (event) => {
     if (event.code === 'Space') {
         event.preventDefault();
         bullets.push(new Bullet(player.position.x, player.position.y, 0, -8));
+        sendPlayerAction({
+            type: 'shoot',
+            position: { x: player.position.x, y: player.position.y },
+            velocity: { x: 0, y: -8 },
+            timestamp: Date.now()
+        });
     }
 });
 
