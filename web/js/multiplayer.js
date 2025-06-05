@@ -73,6 +73,10 @@ socket.on('auth_success', (data) => {
         statusElement.textContent = 'CONNECTED';
         statusElement.style.color = '#00ff00';
     }
+    
+    if (window.hideLoadingScreen) {
+        window.hideLoadingScreen();
+    }
 });
 
 socket.on('auth_failed', () => {
@@ -198,6 +202,25 @@ socket.on('health_pickup_collected', (data) => {
     }
 })
 
+socket.on('wall_damaged', (data) => {
+    if (window.gameMap) {
+        window.gameMap.updateWallHealth(data.x, data.y, data.health);
+    }
+})
+
+
+socket.on('wall_destroyed', (data) => {
+    if (window.gameMap) {
+        window.gameMap.removeWall(data.x, data.y);
+    }
+})
+
+socket.on('map_state', (data) => {
+    if (window.gameMap) {
+        window.gameMap.updateMapState(data.destructible_walls, data.health_pickups);
+    }
+})
+
 socket.on('error_message', (message) => {
     console.error('Server error: ', message);
 })
@@ -208,6 +231,8 @@ function authenticatePlayer() {
         localStorage.setItem('playerName', playerName);
     }
     
+    const playerColor = localStorage.getItem('playerColor') || '#4285f4';
+    
     const storedToken = localStorage.getItem('playerToken');
     const storedId = localStorage.getItem('playerId');
 
@@ -217,10 +242,10 @@ function authenticatePlayer() {
         playerId = storedId;
         playerToken = storedToken;
         console.log('Using stored credentials');
-        socket.emit('authenticate', { id: playerId, token: playerToken, name: playerName });
+        socket.emit('authenticate', { id: playerId, token: playerToken, name: playerName, color: playerColor });
     } else {
         console.log('Requesting new authentication');
-        socket.emit('request_auth', { name: playerName });
+        socket.emit('request_auth', { name: playerName, color: playerColor });
     }
 }
 
@@ -308,7 +333,6 @@ function debugMultiplayerState() {
     console.log('========================');
 }
 
-// Debug every 10 seconds
 setInterval(debugMultiplayerState, 10000);
 
 export {

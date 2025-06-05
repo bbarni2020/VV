@@ -159,11 +159,16 @@ class Map {
                 bullet.hasBounced = true;
                 return bullet.bounceCount >= bullet.maxBounces;
             } else if (collision.type === 'destructible') {
-                collision.health--;
-                if (collision.health <= 0) {
-                    this.walls = this.walls.filter(wall => wall !== collision);
-                    this.destructibleWalls = this.destructibleWalls.filter(wall => wall !== collision);
-                }
+                import('./multiplayer.js').then(module => {
+                    module.sendPlayerAction({
+                        type: 'bullet_wall_hit',
+                        bulletX: bullet.position.x,
+                        bulletY: bullet.position.y,
+                        wallX: collision.x,
+                        wallY: collision.y,
+                        timestamp: Date.now()
+                    });
+                });
                 return true;
             } else if (collision.type === 'hazard') {
                 return true;
@@ -371,6 +376,44 @@ class Map {
                 ctx.restore();
             }
         });
+    }
+
+    updateWallHealth(x, y, health) {
+        const wall = this.destructibleWalls.find(wall => wall.x === x && wall.y === y);
+        if (wall) {
+            wall.health = health;
+        }
+    }
+
+    removeWall(x, y) {
+        this.destructibleWalls = this.destructibleWalls.filter(wall => wall.x !== x || wall.y !== y);
+        this.walls = this.walls.filter(wall => wall.x !== x || wall.y !== y);
+    }
+
+    updateMapState(destructibleWalls, healthPickups) {
+        this.destructibleWalls = destructibleWalls.map(wall => ({
+            x: wall.x,
+            y: wall.y,
+            width: this.tileSize,
+            height: this.tileSize,
+            type: 'destructible',
+            health: wall.health,
+            maxHealth: wall.max_health
+        }));
+
+        this.walls = this.walls.filter(wall => wall.type !== 'destructible');
+        this.walls.push(...this.destructibleWalls);
+
+        if (healthPickups) {
+            this.healthPickups = healthPickups.map(pickup => ({
+                x: pickup.x,
+                y: pickup.y,
+                width: this.tileSize,
+                height: this.tileSize,
+                collected: pickup.collected,
+                collectedTime: pickup.collected ? Date.now() : 0
+            }));
+        }
     }
 }
 

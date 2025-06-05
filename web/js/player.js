@@ -1,8 +1,9 @@
 class Player {
-    constructor(x, y, speed) {
+    constructor(x, y, speed, color = '#4285f4') {
         this.position = { x: x, y: y };
         this.speed = speed;
         this.size = 20;
+        this.color = color;
         this.animationTime = 0;
         this.lastDirection = 'idle';
         this.isMoving = false;
@@ -170,7 +171,7 @@ class Player {
         ctx.fillStyle = '#000000';
         ctx.fillRect(-width/2 - 1, -height/2 - 1, width + 2, height + 2);
         
-        ctx.fillStyle = '#4285f4';
+        ctx.fillStyle = this.color;
         ctx.fillRect(-width/2, -height/2, width, height);
         
         const eyeOffset = this.isMoving ? Math.sin(this.animationTime * 0.5) * 0.5 : Math.sin(this.animationTime * 0.3) * 0.2;

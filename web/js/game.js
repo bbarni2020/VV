@@ -22,7 +22,8 @@ const gameMap = new Map(FIXED_MAP_WIDTH, FIXED_MAP_HEIGHT);
 window.gameMap = gameMap;
 
 const safeSpawn = gameMap.getSafeSpawnPosition(20);
-const player = new Player(safeSpawn.x, safeSpawn.y, 5);
+const playerColor = localStorage.getItem('playerColor') || '#4285f4';
+const player = new Player(safeSpawn.x, safeSpawn.y, 5, playerColor);
 const bullets = [];
 const explosions = [];
 const otherPlayerBullets = [];
@@ -122,6 +123,7 @@ function update(deltaTime) {
             isDead: player.isDead,
             ammo: player.ammo,
             reloadTime: player.reloadTime,
+            color: player.color,
             timestamp: now
         });
         lastPlayerInfoSent = now
@@ -378,7 +380,7 @@ function drawOtherPlayer(ctx, playerData, cameraX, cameraY) {
     ctx.fillStyle = '#000000';
     ctx.fillRect(-width/2 - 1, -height/2 - 1, width + 2, height + 2);
     
-    ctx.fillStyle = '#ff6b6b';
+    ctx.fillStyle = playerData.color || '#ff6b6b';
     ctx.fillRect(-width/2, -height/2, width, height);
     
     const eyeSize = 3 + Math.sin(time * 3) * 0.2;
@@ -431,7 +433,7 @@ function drawOtherPlayerDeath(ctx, playerData, cameraX, cameraY) {
     ctx.scale(scale, scale);
     ctx.globalAlpha = opacity;
     
-    ctx.fillStyle = '#ff0000';
+    ctx.fillStyle = playerData.color || '#ff0000';
     ctx.fillRect(-10, -10, 20, 20);
     
     for (let i = 0; i < 6; i++) {
@@ -597,6 +599,17 @@ window.addEventListener('keydown', (event) => {
     }
 });
 
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        const menu = document.getElementById('menu');
+        if (menu.classList.contains('show')) {
+            menu.classList.remove('show');
+        } else {
+            menu.classList.add('show');
+        }
+    }
+});
+
 window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -613,7 +626,13 @@ function hideLoadingScreen() {
     }
 }
 
-setTimeout(() => {
-    hideLoadingScreen();
-    requestAnimationFrame(gameLoop);
-}, 3000);
+window.hideLoadingScreen = hideLoadingScreen;
+
+const volumeSlider = document.getElementById('volume');
+volumeSlider.addEventListener('input', (event) => {
+    const volumeValue = event.target.value;
+    console.log(`Volume set to: ${volumeValue}`);
+    // Here you can integrate the volume value with your game's audio system
+});
+
+requestAnimationFrame(gameLoop);
