@@ -37,6 +37,8 @@ function stopHeartbeat() {
 }
 
 
+let connectionTimeout = null;
+
 socket.on('connect', () => {
     console.log('Connected to the server at: ' + serverUrl);
     
@@ -44,17 +46,57 @@ socket.on('connect', () => {
     
     const statusElement = document.getElementById('connectionStatus');
     if (statusElement) {
+        statusElement.textContent = 'CONNECTED - WAITING...';
+        statusElement.style.color = '#ffff00';
+    }
+    
+    console.log('Waiting for connection acknowledgment...');
+    
+    connectionTimeout = setTimeout(() => {
+        console.log('Connection acknowledgment timeout, proceeding with authentication...');
+        const statusElement = document.getElementById('connectionStatus');
+        if (statusElement) {
+            statusElement.textContent = 'AUTHENTICATING...';
+            statusElement.style.color = '#ffff00';
+        }
+        authenticatePlayer();
+    }, 2000);
+})
+
+socket.on('connection_acknowledged', (data) => {
+    console.log('Connection acknowledged by server:', data.sid);
+    
+    if (connectionTimeout) {
+        clearTimeout(connectionTimeout);
+        connectionTimeout = null;
+    }
+    
+    const statusElement = document.getElementById('connectionStatus');
+    if (statusElement) {
         statusElement.textContent = 'AUTHENTICATING...';
         statusElement.style.color = '#ffff00';
     }
     
-    authenticatePlayer();
+
+    setTimeout(() => {
+        authenticatePlayer();
+    }, 500);
 })
 
 socket.on('disconnect', () => {
     console.log('Disconnected from server');
     stopHeartbeat();
+    
+
     isAuthenticated = false;
+    playerId = null;
+    playerToken = null;
+    
+
+    if (connectionTimeout) {
+        clearTimeout(connectionTimeout);
+        connectionTimeout = null;
+    }
     
     const statusElement = document.getElementById('connectionStatus');
     if (statusElement) {
@@ -268,18 +310,18 @@ socket.on('game_reset', (data) => {
         window.gameTimeLimit = data.time_limit;
     }
     
-    // Reset player state if the function exists
+
     if (window.resetPlayerState) {
         window.resetPlayerState();
     }
     
-    // Notify players about the reset
+
     const statusElement = document.getElementById('connectionStatus');
     if (statusElement) {
         statusElement.textContent = 'NEW ROUND';
         statusElement.style.color = '#ffcc00';
         
-        // Reset back to normal after 3 seconds
+
         setTimeout(() => {
             if (statusElement) {
                 statusElement.textContent = 'CONNECTED';
@@ -288,7 +330,7 @@ socket.on('game_reset', (data) => {
         }, 3000);
     }
     
-    // Show a notification on screen
+
     const notification = document.createElement('div');
     notification.className = 'game-notification';
     notification.textContent = 'NEW ROUND STARTED';
@@ -303,6 +345,13 @@ socket.on('game_reset', (data) => {
 });
 
 function authenticatePlayer() {
+
+    if (!socket || !socket.connected) {
+        console.log('Socket not connected, delaying authentication...');
+        setTimeout(() => authenticatePlayer(), 1000);
+        return;
+    }
+    
     if (!playerName) {
         playerName = prompt('Enter your player name:') || 'Anonymous';
         localStorage.setItem('playerName', playerName);
@@ -313,13 +362,15 @@ function authenticatePlayer() {
     const storedToken = localStorage.getItem('playerToken');
     const storedId = localStorage.getItem('playerId');
 
-    console.log('Attempting authentication...', { storedId: !!storedId, storedToken: !!storedToken });
+    console.log('Attempting authentication...', { 
+        storedId: !!storedId, 
+        storedToken: !!storedToken,
+        socketConnected: socket.connected 
+    });
 
     if (storedId && storedToken) {
-        playerId = storedId;
-        playerToken = storedToken;
         console.log('Using stored credentials');
-        socket.emit('authenticate', { id: playerId, token: playerToken, name: playerName, color: playerColor });
+        socket.emit('authenticate', { id: storedId, token: storedToken, name: playerName, color: playerColor });
     } else {
         console.log('Requesting new authentication');
         socket.emit('request_auth', { name: playerName, color: playerColor });
@@ -327,9 +378,14 @@ function authenticatePlayer() {
 }
 
 function sendPlayerAction(action) {
-    if (!isAuthenticated || !playerId || !playerToken) {
-        console.error('Not authenticated. Cannot send player action.');
-        return;
+    if (!isAuthenticated || !playerId || !playerToken || !socket || !socket.connected) {
+        console.warn('Cannot send player action - not authenticated or not connected', {
+            isAuthenticated,
+            hasPlayerId: !!playerId,
+            hasPlayerToken: !!playerToken,
+            socketConnected: socket && socket.connected
+        });
+        return false;
     }
 
     const secureAction = {
@@ -344,8 +400,13 @@ function sendPlayerAction(action) {
 }
 
 function sendPlayerInfo(playerInfo) {
-    if (!isAuthenticated || !playerId || !playerToken) {
-        console.error('Not authenticated. Cannot send player information.')
+    if (!isAuthenticated || !playerId || !playerToken || !socket || !socket.connected) {
+        console.warn('Cannot send player info - not authenticated or not connected', {
+            isAuthenticated,
+            hasPlayerId: !!playerId,
+            hasPlayerToken: !!playerToken,
+            socketConnected: socket && socket.connected
+        });
         return false;
     }
 
@@ -361,7 +422,19 @@ function sendPlayerInfo(playerInfo) {
 }
 
 function getAuthenticationStatus() {
-    return isAuthenticated;
+    return isAuthenticated && playerId && playerToken && socket && socket.connected;
+}
+
+function waitForAuthentication(callback, maxRetries = 50, currentRetry = 0) {
+    if (getAuthenticationStatus()) {
+        callback();
+    } else if (currentRetry < maxRetries) {
+        setTimeout(() => {
+            waitForAuthentication(callback, maxRetries, currentRetry + 1);
+        }, 100);
+    } else {
+        console.error('Authentication timeout - unable to authenticate within 5 seconds');
+    }
 }
 
 function getOtherPlayers() {
@@ -419,6 +492,7 @@ export {
     playerName,
     socket,
     getAuthenticationStatus,
+    waitForAuthentication,
     getOtherPlayers,
     getPlayerId,
     updateOtherPlayers,
