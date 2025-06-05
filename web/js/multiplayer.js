@@ -158,8 +158,10 @@ socket.on('player_info_update', (data) => {
                 targetPosition: { ...(data.data.position || { x: 400, y: 300 }) },
                 velocity: { x: 0, y: 0 },
                 lastUpdate: Date.now(),
-                score: data.data.score || 0,
-                bulletCount: data.data.bulletCount || 0
+                kills: data.data.kills || 0,
+                bulletCount: data.data.bulletCount || 0,
+                health: data.data.health || 100,
+                isDead: data.data.isDead || false
             };
             console.log(`Added new player from update: ${data.playerId}`);
         }
@@ -184,6 +186,16 @@ socket.on('player_info_update', (data) => {
 })
 
 socket.on('player_action', (data) => {
+})
+
+socket.on('health_pickup_collected', (data) => {
+    if (data.playerId === playerId) {
+        console.log('Health pickup collected, new health:', data.newHealth);
+    }
+    if (window.gameMap && window.gameMap.healthPickups && window.gameMap.healthPickups[data.pickupIndex]) {
+        window.gameMap.healthPickups[data.pickupIndex].collected = true;
+        window.gameMap.healthPickups[data.pickupIndex].collectedTime = Date.now();
+    }
 })
 
 socket.on('error_message', (message) => {

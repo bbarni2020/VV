@@ -4,7 +4,7 @@ import Explosion from './explosion.js';
 import Map from './map.js';
 import input from './input.js';
 import { bounceOffWalls } from './physics.js';
-import { sendPlayerAction, sendPlayerInfo, getAuthenticationStatus, getOtherPlayers, socket, updateOtherPlayers, playerName } from './multiplayer.js';
+import { sendPlayerAction, sendPlayerInfo, getAuthenticationStatus, getOtherPlayers, socket, updateOtherPlayers, playerName, getPlayerId } from './multiplayer.js';
 
 let lastPlayerInfoSent = 0;
 const playerInfoInterval = 100;
@@ -19,13 +19,15 @@ const FIXED_MAP_WIDTH = 1280;
 const FIXED_MAP_HEIGHT = 720;
 const gameMap = new Map(FIXED_MAP_WIDTH, FIXED_MAP_HEIGHT);
 
+window.gameMap = gameMap;
+
 const safeSpawn = gameMap.getSafeSpawnPosition(20);
 const player = new Player(safeSpawn.x, safeSpawn.y, 5);
 const bullets = [];
 const explosions = [];
 const otherPlayerBullets = [];
 
-let score = 0;
+let kills = 0;
 let lastTime = 0;
 
 socket.on('player_action', (data) => {
@@ -35,8 +37,26 @@ socket.on('player_action', (data) => {
             bulletData.position.x, 
             bulletData.position.y, 
             bulletData.velocity.x, 
-            bulletData.velocity.y
+            bulletData.velocity.y,
+            data.playerId
         ));
+    } else if (data.action.type === 'player_hit') {
+        if (data.action.targetId === getPlayerId()) {
+            const damage = data.action.isOwnBullet ? 5 : 10;
+            const died = player.takeDamage(damage, data.action.isOwnBullet);
+            if (died) {
+                explosions.push(new Explosion(player.position.x, player.position.y));
+                sendPlayerAction({
+                    type: 'player_died',
+                    killerId: data.playerId,
+                    timestamp: Date.now()
+                });
+            }
+        }
+    } else if (data.action.type === 'player_died') {
+        if (data.action.killerId === getPlayerId()) {
+            kills++;
+        }
     }
 });
 
@@ -64,6 +84,14 @@ function gameLoop(timestamp) {
 
 function update(deltaTime) {
     updateOtherPlayers(deltaTime);
+    player.update(deltaTime);
+    
+    gameMap.updateHealthPickups();
+    gameMap.checkHealthPickup(player);
+    
+    if (player.isDead && player.respawnTimer <= 0) {
+        player.respawn(gameMap);
+    }
     
     let playerMoved = false;
 
@@ -88,8 +116,12 @@ function update(deltaTime) {
     if (now-lastPlayerInfoSent > playerInfoInterval && getAuthenticationStatus()) {
         sendPlayerInfo({
             position: player.position,
-            score: score,
+            kills: kills,
             bulletCount: bullets.length,
+            health: player.health,
+            isDead: player.isDead,
+            ammo: player.ammo,
+            reloadTime: player.reloadTime,
             timestamp: now
         });
         lastPlayerInfoSent = now
@@ -99,17 +131,96 @@ function update(deltaTime) {
 
     for (let i = bullets.length - 1; i >= 0; i--) {
         bullets[i].update();
+        
+        const otherPlayers = getOtherPlayers();
+        let hitPlayer = false;
+        
+        Object.keys(otherPlayers).forEach(playerId => {
+            const otherPlayer = otherPlayers[playerId];
+            if (otherPlayer.isDead) return;
+            
+            const dx = bullets[i].position.x - otherPlayer.displayPosition.x;
+            const dy = bullets[i].position.y - otherPlayer.displayPosition.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < bullets[i].radius + 10) {
+                explosions.push(new Explosion(bullets[i].position.x, bullets[i].position.y));
+                sendPlayerAction({
+                    type: 'player_hit',
+                    targetId: playerId,
+                    isOwnBullet: false,
+                    timestamp: Date.now()
+                });
+                bullets.splice(i, 1);
+                hitPlayer = true;
+                return;
+            }
+        });
+        
+        if (hitPlayer) continue;
+        
+        if (!player.isDead) {
+            const dx = bullets[i].position.x - player.position.x;
+            const dy = bullets[i].position.y - player.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < bullets[i].radius + 10) {
+                const isOwnBullet = bullets[i].ownerId === getPlayerId();
+                
+                if (!isOwnBullet || bullets[i].hasBounced) {
+                    explosions.push(new Explosion(bullets[i].position.x, bullets[i].position.y));
+                    const died = player.takeDamage(5, isOwnBullet);
+                    if (died) {
+                        explosions.push(new Explosion(player.position.x, player.position.y));
+                        sendPlayerAction({
+                            type: 'player_died',
+                            killerId: bullets[i].ownerId,
+                            timestamp: Date.now()
+                        });
+                    }
+                    bullets.splice(i, 1);
+                    continue;
+                }
+            }
+        }
+        
         const shouldRemove = bounceOffWalls(bullets[i], gameMap.width, gameMap.height, gameMap);
         
         if (shouldRemove) {
             explosions.push(new Explosion(bullets[i].position.x, bullets[i].position.y));
             bullets.splice(i, 1);
-            score += 10;
         }
     }
     
     for (let i = otherPlayerBullets.length - 1; i >= 0; i--) {
         otherPlayerBullets[i].update();
+        
+        if (!player.isDead) {
+            const dx = otherPlayerBullets[i].position.x - player.position.x;
+            const dy = otherPlayerBullets[i].position.y - player.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < otherPlayerBullets[i].radius + 10) {
+                const isOwnBullet = otherPlayerBullets[i].ownerId === getPlayerId();
+                
+                if (!isOwnBullet || otherPlayerBullets[i].hasBounced) {
+                    explosions.push(new Explosion(otherPlayerBullets[i].position.x, otherPlayerBullets[i].position.y));
+                    const damage = isOwnBullet ? 5 : 10;
+                    const died = player.takeDamage(damage, isOwnBullet);
+                    if (died) {
+                        explosions.push(new Explosion(player.position.x, player.position.y));
+                        sendPlayerAction({
+                            type: 'player_died',
+                            killerId: otherPlayerBullets[i].ownerId,
+                            timestamp: Date.now()
+                        });
+                    }
+                    otherPlayerBullets.splice(i, 1);
+                    continue;
+                }
+            }
+        }
+        
         const shouldRemove = bounceOffWalls(otherPlayerBullets[i], gameMap.width, gameMap.height, gameMap);
         
         if (shouldRemove) {
@@ -125,8 +236,31 @@ function update(deltaTime) {
         }
     }
     
-    document.getElementById('score').textContent = score;
     document.getElementById('bulletCount').textContent = bullets.length;
+    
+    const healthElement = document.getElementById('health');
+    if (healthElement) {
+        healthElement.textContent = player.health;
+    }
+    
+    const killsElement = document.getElementById('kills');
+    if (killsElement) {
+        killsElement.textContent = kills;
+    }
+    
+    const ammoElement = document.getElementById('ammo');
+    if (ammoElement) {
+        ammoElement.textContent = player.ammo;
+    }
+    
+    const reloadStatus = document.getElementById('reloadStatus');
+    const reloadTimeElement = document.getElementById('reloadTime');
+    if (player.reloadTime > 0) {
+        reloadStatus.style.display = 'block';
+        reloadTimeElement.textContent = Math.ceil(player.reloadTime / 1000);
+    } else {
+        reloadStatus.style.display = 'none';
+    }
     
     const otherPlayers = getOtherPlayers();
     const totalPlayers = Object.keys(otherPlayers).length + 1;
@@ -178,6 +312,11 @@ function drawBackground(ctx, cameraX, cameraY) {
 }
 
 function drawOtherPlayer(ctx, playerData, cameraX, cameraY) {
+    if (playerData.isDead) {
+        drawOtherPlayerDeath(ctx, playerData, cameraX, cameraY);
+        return;
+    }
+    
     const size = 20;
     const time = Date.now() * 0.005;
     const displayPos = playerData.displayPosition || playerData.position;
@@ -197,11 +336,37 @@ function drawOtherPlayer(ctx, playerData, cameraX, cameraY) {
     const nameWidth = playerNameText.length * 6;
     
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(x + width/2 - nameWidth/2 - 2, y - 15, nameWidth + 4, 8);
+    ctx.fillRect(x + width/2 - nameWidth/2 - 2, y - 25, nameWidth + 4, 8);
     ctx.fillStyle = '#ffffff';
     ctx.font = '8px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(playerNameText, x + width/2, y - 9);
+    ctx.fillText(playerNameText, x + width/2, y - 19);
+    
+    const health = playerData.health || 100;
+    const maxHealth = 100;
+    const healthPercent = health / maxHealth;
+    const barWidth = size + 4;
+    const barHeight = 3;
+    const barX = x + width/2 - barWidth/2;
+    const barY = y - 15;
+    
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(barX - 1, barY - 1, barWidth + 2, barHeight + 2);
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(barX, barY, barWidth, barHeight);
+    
+    let healthColor;
+    if (healthPercent > 0.7) {
+        healthColor = '#00ff00';
+    } else if (healthPercent > 0.4) {
+        healthColor = '#ffff00';
+    } else if (healthPercent > 0.2) {
+        healthColor = '#ff8800';
+    } else {
+        healthColor = '#ff0000';
+    }
+    ctx.fillStyle = healthColor;
+    ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
     
     ctx.save();
     ctx.translate(x + width/2, y + height/2);
@@ -242,6 +407,94 @@ function drawOtherPlayer(ctx, playerData, cameraX, cameraY) {
     }
     
     ctx.restore();
+    
+    if (playerData.reloadTime > 0) {
+        drawOtherPlayerReload(ctx, playerData, cameraX, cameraY);
+    }
+}
+
+function drawOtherPlayerDeath(ctx, playerData, cameraX, cameraY) {
+    const displayPos = playerData.displayPosition || playerData.position;
+    const baseX = displayPos.x - 10 - cameraX;
+    const baseY = displayPos.y - 10 - cameraY;
+    
+    const time = Date.now() * 0.01;
+    
+    ctx.save();
+    ctx.translate(baseX + 10, baseY + 10);
+    
+    const rotation = time;
+    const scale = 0.5 + Math.sin(time * 2) * 0.2;
+    const opacity = 0.3 + Math.sin(time * 3) * 0.2;
+    
+    ctx.rotate(rotation);
+    ctx.scale(scale, scale);
+    ctx.globalAlpha = opacity;
+    
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(-10, -10, 20, 20);
+    
+    for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2 + time;
+        const radius = 15;
+        const sparkleX = Math.cos(angle) * radius;
+        const sparkleY = Math.sin(angle) * radius;
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(sparkleX - 1, sparkleY - 1, 2, 2);
+    }
+    
+    ctx.restore();
+}
+
+function drawOtherPlayerReload(ctx, playerData, cameraX, cameraY) {
+    const time = Date.now() * 0.008;
+    const displayPos = playerData.displayPosition || playerData.position;
+    const reloadProgress = playerData.reloadTime > 0 ? 1 - (playerData.reloadTime / 2000) : 0;
+    
+    const x = displayPos.x - cameraX;
+    const y = displayPos.y - 20 - 20 - cameraY;
+    
+    ctx.save();
+    ctx.translate(x, y + Math.sin(time * 2) * 2);
+    
+    const opacity = 0.8 + Math.sin(time * 4) * 0.2;
+    ctx.globalAlpha = opacity;
+    
+    const textSize = 7 + Math.sin(time * 3) * 0.8;
+    ctx.font = `${textSize}px monospace`;
+    ctx.textAlign = 'center';
+    
+    const shadowOffset = Math.sin(time * 5) * 0.4;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillText('RELOADING', shadowOffset, shadowOffset);
+    
+    const hue = (time * 60) % 360;
+    ctx.fillStyle = `hsl(${hue}, 70%, 60%)`;
+    ctx.fillText('RELOADING', 0, 0);
+    
+    for (let i = 0; i < 3; i++) {
+        const dotOpacity = Math.sin(time * 6 + i * 0.5) > 0 ? 1 : 0.3;
+        ctx.globalAlpha = dotOpacity;
+        ctx.fillStyle = `hsl(${(hue + i * 30) % 360}, 80%, 70%)`;
+        ctx.fillText('.', 30 + i * 5, 0);
+    }
+    
+    ctx.globalAlpha = 0.6;
+    const barWidth = 50;
+    const barHeight = 2;
+    const barY = 7;
+    
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(-barWidth/2 - 1, barY - 1, barWidth + 2, barHeight + 2);
+    
+    ctx.fillStyle = 'rgba(100, 100, 100, 0.8)';
+    ctx.fillRect(-barWidth/2, barY, barWidth, barHeight);
+    
+    ctx.fillStyle = `hsl(${hue}, 70%, 60%)`;
+    ctx.fillRect(-barWidth/2, barY, barWidth * reloadProgress, barHeight);
+    
+    ctx.restore();
 }
 
 function render() {
@@ -253,6 +506,7 @@ function render() {
     gameMap.draw(ctx, camera.x, camera.y);
     
     player.draw(ctx, camera.x, camera.y);
+    player.drawHealthBar(ctx, camera.x, camera.y);
     
     const otherPlayers = getOtherPlayers();
     Object.keys(otherPlayers).forEach(playerId => {
@@ -291,31 +545,49 @@ function render() {
 }
 
 canvas.addEventListener('click', (event) => {
+    if (player.isDead) return;
+    
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left + camera.x;
     const mouseY = event.clientY - rect.top + camera.y;
     
     const bulletData = player.shoot(mouseX, mouseY);
-    bullets.push(new Bullet(bulletData.x, bulletData.y, bulletData.velocityX, bulletData.velocityY));
+    if (bulletData) {
+        bullets.push(new Bullet(bulletData.x, bulletData.y, bulletData.velocityX, bulletData.velocityY, getPlayerId()));
 
-    sendPlayerAction({
-        type: 'shoot',
-        position: { x: bulletData.x, y: bulletData.y },
-        velocity: { x: bulletData.velocityX, y: bulletData.velocityY },
-        timestamp: Date.now()
-    })
+        sendPlayerAction({
+            type: 'shoot',
+            position: { x: bulletData.x, y: bulletData.y },
+            velocity: { x: bulletData.velocityX, y: bulletData.velocityY },
+            timestamp: Date.now()
+        });
+    }
 });
 
 window.addEventListener('keydown', (event) => {
     if (event.code === 'Space') {
         event.preventDefault();
-        bullets.push(new Bullet(player.position.x, player.position.y, 0, -8));
+        if (player.isDead || player.ammo <= 0 || player.reloadTime > 0) return;
+        
+        player.ammo--;
+        if (player.ammo <= 0) {
+            player.reloadTime = player.reloadDuration;
+        }
+        
+        bullets.push(new Bullet(player.position.x, player.position.y, 0, -8, getPlayerId()));
         sendPlayerAction({
             type: 'shoot',
             position: { x: player.position.x, y: player.position.y },
             velocity: { x: 0, y: -8 },
             timestamp: Date.now()
         });
+    }
+    
+    if (event.code === 'KeyR') {
+        event.preventDefault();
+        if (player.isDead || player.reloadTime > 0 || player.ammo === player.maxAmmo) return;
+        
+        player.reloadTime = player.reloadDuration;
     }
     
     if (event.code === 'KeyM') {

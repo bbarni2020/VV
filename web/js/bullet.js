@@ -1,10 +1,12 @@
 class Bullet {
-    constructor(x, y, velocityX, velocityY) {
+    constructor(x, y, velocityX, velocityY, ownerId = null) {
         this.position = { x: x, y: y };
         this.velocity = { x: velocityX, y: velocityY };
         this.radius = 3;
         this.bounceCount = 0;
         this.maxBounces = 3;
+        this.ownerId = ownerId;
+        this.hasBounced = false;
     }
 
     update() {
@@ -26,6 +28,7 @@ class Bullet {
         
         if (bounced) {
             this.bounceCount++;
+            this.hasBounced = true;
         }
         
         return this.bounceCount >= this.maxBounces;

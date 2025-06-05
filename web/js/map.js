@@ -9,6 +9,7 @@ class Map {
         this.movingPlatforms = [];
         this.teleporters = [];
         this.destructibleWalls = [];
+        this.healthPickups = [];
         this.generateMap();
     }
 
@@ -17,6 +18,7 @@ class Map {
         this.movingPlatforms = [];
         this.teleporters = [];
         this.destructibleWalls = [];
+        this.healthPickups = [];
         
         for (let y = 0; y < mapData.length; y++) {
             for (let x = 0; x < mapData[y].length; x++) {
@@ -33,7 +35,7 @@ class Map {
             case 1: return 'bouncy';
             case 2: return 'solid';
             case 3: return 'destructible';
-            case 4: return 'teleporter';
+            case 4: return 'health';
             case 5: return 'hazard';
             default: return 'solid';
         }
@@ -54,15 +56,20 @@ class Map {
             this.destructibleWalls.push(wall);
         }
         
-        if (type === 'teleporter') {
-            this.teleporters.push({
+        if (type === 'health') {
+            this.healthPickups.push({
                 x: x * this.tileSize,
                 y: y * this.tileSize,
-                id: 'teleporter_' + x + '_' + y
+                width: this.tileSize,
+                height: this.tileSize,
+                collected: false,
+                respawnTime: 0
             });
         }
         
-        this.walls.push(wall);
+        if (type !== 'health') {
+            this.walls.push(wall);
+        }
     }
 
     getSafeSpawnPosition(playerSize) {
@@ -149,6 +156,7 @@ class Map {
                 }
                 
                 bullet.bounceCount++;
+                bullet.hasBounced = true;
                 return bullet.bounceCount >= bullet.maxBounces;
             } else if (collision.type === 'destructible') {
                 collision.health--;
@@ -172,6 +180,34 @@ class Map {
             
             if (platform.x <= platform.startX || platform.x >= platform.endX) {
                 platform.direction *= -1;
+            }
+        });
+    }
+
+    updateHealthPickups() {
+        const currentTime = Date.now();
+        this.healthPickups.forEach(pickup => {
+            if (pickup.collected && currentTime - pickup.collectedTime > 10000) {
+                pickup.collected = false;
+                pickup.collectedTime = 0;
+            }
+        });
+    }
+    
+    checkHealthPickup(player) {
+        const currentTime = Date.now();
+        this.healthPickups.forEach(pickup => {
+            if (!pickup.collected) {
+                const distance = Math.sqrt(
+                    Math.pow(player.position.x - (pickup.x + pickup.width/2), 2) +
+                    Math.pow(player.position.y - (pickup.y + pickup.height/2), 2)
+                );
+                
+                if (distance < 25 && player.health < player.maxHealth) {
+                    player.health = Math.min(player.maxHealth, player.health + 20);
+                    pickup.collected = true;
+                    pickup.collectedTime = currentTime;
+                }
             }
         });
     }
@@ -295,6 +331,44 @@ class Map {
                 if (Math.sin(time * 3) > 0.3) {
                     ctx.fillRect(drawX + Math.random() * wall.width, drawY + Math.random() * wall.height, 1, 1);
                 }
+            }
+        });
+        
+        this.healthPickups.forEach(pickup => {
+            if (!pickup.collected) {
+                const drawX = pickup.x - cameraX;
+                const drawY = pickup.y - cameraY;
+                
+                if (drawX + pickup.width < 0 || drawX > ctx.canvas.width || 
+                    drawY + pickup.height < 0 || drawY > ctx.canvas.height) {
+                    return;
+                }
+                
+                const time = Date.now() * 0.005;
+                const pulse = 0.8 + Math.sin(time * 4) * 0.2;
+                const bobY = Math.sin(time * 3) * 3;
+                
+                ctx.save();
+                ctx.translate(drawX + pickup.width/2, drawY + pickup.height/2 + bobY);
+                ctx.scale(pulse, pulse);
+                
+                ctx.fillStyle = '#ff4444';
+                ctx.fillRect(-pickup.width/2, -pickup.height/2, pickup.width, pickup.height);
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-pickup.width/2 + 6, -pickup.height/2 + 10, pickup.width - 12, 4);
+                ctx.fillRect(-pickup.width/2 + 12, -pickup.height/2 + 6, 8, 12);
+                
+                ctx.fillStyle = '#ffaaaa';
+                for (let i = 0; i < 4; i++) {
+                    const sparkleAngle = time * 2 + i * Math.PI / 2;
+                    const sparkleRadius = 20 + Math.sin(time * 3) * 5;
+                    const sparkleX = Math.cos(sparkleAngle) * sparkleRadius;
+                    const sparkleY = Math.sin(sparkleAngle) * sparkleRadius;
+                    ctx.fillRect(sparkleX - 1, sparkleY - 1, 2, 2);
+                }
+                
+                ctx.restore();
             }
         });
     }

@@ -19,6 +19,7 @@ function bounceOffWalls(bullet, canvasWidth, canvasHeight, map) {
     
     if (bounced) {
         bullet.bounceCount++;
+        bullet.hasBounced = true;
     }
     
     return bullet.bounceCount >= bullet.maxBounces;

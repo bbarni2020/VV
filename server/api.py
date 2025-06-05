@@ -14,6 +14,59 @@ player_sessions = {}
 player_tokens = {}
 players_data = {}
 
+map_data = [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,2,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+]
+
+health_pickups = []
+destructible_walls = []
+
+def initialize_map_objects():
+    global health_pickups, destructible_walls
+    health_pickups = []
+    destructible_walls = []
+    
+    for y in range(len(map_data)):
+        for x in range(len(map_data[y])):
+            tile = map_data[y][x]
+            if tile == 4:
+                health_pickups.append({
+                    'x': x * 32,
+                    'y': y * 32,
+                    'collected': False,
+                    'respawn_time': 0
+                })
+            elif tile == 3:
+                destructible_walls.append({
+                    'x': x * 32,
+                    'y': y * 32,
+                    'health': 3,
+                    'max_health': 3
+                })
+
+initialize_map_objects()
+
 def cleanup_stale_players():
     current_time = time.time() * 1000
     stale_players = []
@@ -40,11 +93,42 @@ def cleanup_stale_players():
                 del player_tokens[session['token']]
             del player_sessions[session_to_remove]
 
+def update_health_pickups():
+    current_time = time.time() * 1000
+    for pickup in health_pickups:
+        if pickup['collected'] and current_time - pickup['respawn_time'] > 10000:
+            pickup['collected'] = False
+            pickup['respawn_time'] = 0
+
+def check_health_pickup_collision(player_id, player_data):
+    current_time = time.time() * 1000
+    for pickup in health_pickups:
+        if not pickup['collected']:
+            player_x = player_data['position']['x']
+            player_y = player_data['position']['y']
+            pickup_center_x = pickup['x'] + 16
+            pickup_center_y = pickup['y'] + 16
+            
+            distance = ((player_x - pickup_center_x) ** 2 + (player_y - pickup_center_y) ** 2) ** 0.5
+            
+            if distance < 25 and player_data['health'] < 100:
+                player_data['health'] = min(100, player_data['health'] + 20)
+                pickup['collected'] = True
+                pickup['respawn_time'] = current_time
+                socketio.emit('health_pickup_collected', {
+                    'playerId': player_id,
+                    'pickupIndex': health_pickups.index(pickup),
+                    'newHealth': player_data['health']
+                }, broadcast=True)
+                return True
+    return False
+
 def start_cleanup_timer():
     def cleanup_loop():
         while True:
-            time.sleep(30)
+            time.sleep(5)
             cleanup_stale_players()
+            update_health_pickups()
     
     cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
     cleanup_thread.start()
@@ -92,8 +176,12 @@ def handle_request_auth(data=None):
     players_data[player_id] = {
         'name': player_name,
         'position': {'x': 400 + (len(players_data) * 50), 'y': 300 + (len(players_data) * 30)},
-        'score': 0,
+        'kills': 0,
         'bulletCount': 0,
+        'health': 100,
+        'isDead': False,
+        'ammo': 10,
+        'reloadTime': 0,
         'lastUpdate': time.time() * 1000
     }
 
@@ -123,8 +211,12 @@ def handle_authenticate(data):
             players_data[player_id] = {
                 'name': player_name,
                 'position': {'x': 400 + (len(players_data) * 50), 'y': 300 + (len(players_data) * 30)},
-                'score': 0,
+                'kills': 0,
                 'bulletCount': 0,
+                'health': 100,
+                'isDead': False,
+                'ammo': 10,
+                'reloadTime': 0,
                 'lastUpdate': time.time() * 1000
             }
         else:
@@ -189,6 +281,8 @@ def handle_player_info_update(data):
         players_data[player_id].update(player_info)
         players_data[player_id]['lastUpdate'] = time.time() * 1000
         
+        if 'position' in player_info:
+            check_health_pickup_collision(player_id, players_data[player_id])
 
     emit('player_info_update', {
         'playerId': player_id,

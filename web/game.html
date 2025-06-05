@@ -10,13 +10,16 @@
 <body>
     <div class="title">VIVID VIOLENCE</div>
     <div class="game-ui">
-        <div>SCORE: <span id="score">0</span></div>
+        <div>HEALTH: <span id="health">100</span>/100</div>
+        <div>KILLS: <span id="kills">0</span></div>
+        <div>AMMO: <span id="ammo">10</span>/10</div>
+        <div id="reloadStatus" style="display: none;">RELOADING: <span id="reloadTime">0</span>s</div>
         <div>BULLETS: <span id="bulletCount">0</span></div>
         <div>PLAYERS: <span id="playerCount">1</span></div>
         <div>STATUS: <span id="connectionStatus">CONNECTING...</span></div>
     </div>
     <div class="controls">
-        WASD/ARROWS: MOVE | CLICK: SHOOT | SPACE: SHOOT UP<br>
+        WASD/ARROWS: MOVE | CLICK: SHOOT | SPACE: SHOOT UP | R: RELOAD<br>
         GRAY: SOLID WALLS | GREEN: BOUNCY WALLS
     </div>
     <div id="loadingScreen" class="loading-screen">
