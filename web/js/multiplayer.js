@@ -1,5 +1,9 @@
 const serverUrl = localStorage.getItem('serverUrl') || 'http://localhost:7895';
-const socket = io(serverUrl);
+console.log('Connecting to multiplayer server at:', serverUrl);
+const socket = io(serverUrl, {
+    transports: ['websocket', 'polling'],
+    reconnectionAttempts: 5
+});
 
 let playerName = null;
 let playerId = null;

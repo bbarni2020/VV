@@ -93,7 +93,7 @@
         });
         
         function fetchQuote() {
-            const userApiUrl = 'http://localhost:4765';
+            const userApiUrl = getUserApiUrl();
             
             fetch(`${userApiUrl}/get_quote`)
                 .then(response => response.json())
@@ -112,7 +112,7 @@
         
 
         document.getElementById('saveUserBtn').addEventListener('click', function() {
-            const userApiUrl = document.getElementById('serverUrl').value.replace(':7895', ':4765');
+            const userApiUrl = getUserApiUrl();
             const playerName = document.getElementById('name').value;
             const playerColor = document.getElementById('color').value;
             
@@ -140,7 +140,7 @@
         });
         
         document.getElementById('getUserBtn').addEventListener('click', function() {
-            const userApiUrl = document.getElementById('serverUrl').value.replace(':7895', ':4765');
+            const userApiUrl = getUserApiUrl();
             
             fetch(`${userApiUrl}/get`)
                 .then(response => response.json())
@@ -165,7 +165,8 @@
         });
         
         document.getElementById('deleteUserBtn').addEventListener('click', function() {
-            const userApiUrl = document.getElementById('serverUrl').value.replace(':7895', ':4765');
+            const serverUrl = document.getElementById('serverUrl').value || localStorage.getItem('serverUrl') || 'http://localhost:7895';
+            const userApiUrl = serverUrl.replace(/:\d+$/, ':4765');
             
             fetch(`${userApiUrl}/delete`, {
                 method: 'POST'
@@ -190,7 +191,8 @@
             
             clearTimeout(nameUpdateTimeout);
             nameUpdateTimeout = setTimeout(() => {
-                const userApiUrl = document.getElementById('serverUrl').value.replace(':7895', ':4765');
+                const serverUrl = document.getElementById('serverUrl').value || localStorage.getItem('serverUrl') || 'http://localhost:7895';
+                const userApiUrl = serverUrl.replace(/:\d+$/, ':4765');
                 
                 fetch(`${userApiUrl}/edit/name`, {
                     method: 'POST',
@@ -216,7 +218,8 @@
             
             clearTimeout(colorUpdateTimeout);
             colorUpdateTimeout = setTimeout(() => {
-                const userApiUrl = document.getElementById('serverUrl').value.replace(':7895', ':4765');
+                const serverUrl = document.getElementById('serverUrl').value || localStorage.getItem('serverUrl') || 'http://localhost:7895';
+                const userApiUrl = serverUrl.replace(/:\d+$/, ':4765');
                 
                 fetch(`${userApiUrl}/edit/color`, {
                     method: 'POST',
@@ -235,6 +238,18 @@
                 });
             }, 1000);
         });
+        
+        function getUserApiUrl() {
+            const serverUrl = document.getElementById('serverUrl').value || localStorage.getItem('serverUrl') || 'http://localhost:7895';
+            if (serverUrl.includes('://')) {
+                const url = new URL(serverUrl);
+                return `${url.protocol}//${url.hostname}:4765`;
+            } else if (serverUrl.includes(':')) {
+                const parts = serverUrl.split(':');
+                return `http://${parts[0]}:4765`;
+            }
+            return 'http://192.168.31.74:4765';
+        }
         
         document.addEventListener('DOMContentLoaded', fetchQuote);
     </script>
