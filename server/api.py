@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory
 from flask_socketio import SocketIO, emit
 import uuid
 import secrets
 import time
 import threading
+import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'abc'
@@ -27,7 +28,6 @@ map_data = [
     [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
     [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
     [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
     [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
     [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
     [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -78,7 +78,7 @@ def cleanup_stale_players():
     for player_id in stale_players:
         if player_id in players_data:
             del players_data[player_id]
-            socketio.emit('player_disconnected', {'playerId': player_id}, broadcast=True)
+            socketio.emit('player_disconnected', {'playerId': player_id})
             print(f'Removed stale player: {player_id}')
         
         session_to_remove = None
@@ -119,8 +119,37 @@ def check_health_pickup_collision(player_id, player_data):
                     'playerId': player_id,
                     'pickupIndex': health_pickups.index(pickup),
                     'newHealth': player_data['health']
-                }, broadcast=True)
+                })
                 return True
+    return False
+
+def check_bullet_wall_collision(bullet_x, bullet_y, bullet_radius=3):
+    global destructible_walls
+    
+    for wall in destructible_walls[:]:
+        if (bullet_x - bullet_radius < wall['x'] + 32 and
+            bullet_x + bullet_radius > wall['x'] and
+            bullet_y - bullet_radius < wall['y'] + 32 and
+            bullet_y + bullet_radius > wall['y']):
+            
+            wall['health'] -= 1
+            
+            if wall['health'] <= 0:
+                destructible_walls.remove(wall)
+                socketio.emit('wall_destroyed', {
+                    'x': wall['x'],
+                    'y': wall['y']
+                })
+            else:
+                socketio.emit('wall_damaged', {
+                    'x': wall['x'],
+                    'y': wall['y'],
+                    'health': wall['health'],
+                    'max_health': wall['max_health']
+                })
+            
+            return True
+    
     return False
 
 def start_cleanup_timer():
@@ -129,11 +158,18 @@ def start_cleanup_timer():
             time.sleep(5)
             cleanup_stale_players()
             update_health_pickups()
+            
+            current_time = time.time() * 1000
+            if current_time - game_start_time > game_time_limit:
+                reset_game()
     
     cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
     cleanup_thread.start()
 
 start_cleanup_timer()
+
+game_start_time = time.time() * 1000
+game_time_limit = 5 * 60 * 1000
 
 @socketio.on('connect')
 def handle_connect():
@@ -161,6 +197,7 @@ def handle_request_auth(data=None):
     player_id = str(uuid.uuid4())
     token = secrets.token_hex(32)
     player_name = data.get('name', 'Anonymous') if data else 'Anonymous'
+    player_color = data.get('color', '#4285f4') if data else '#4285f4'
 
     player_sessions[request.sid] = {
         'playerId': player_id,
@@ -175,6 +212,7 @@ def handle_request_auth(data=None):
 
     players_data[player_id] = {
         'name': player_name,
+        'color': player_color,
         'position': {'x': 400 + (len(players_data) * 50), 'y': 300 + (len(players_data) * 30)},
         'kills': 0,
         'bulletCount': 0,
@@ -190,7 +228,18 @@ def handle_request_auth(data=None):
     other_players = {pid: data for pid, data in players_data.items() if pid != player_id}
     emit('players_data', {'players': other_players})
 
+    emit('map_state', {
+        'destructible_walls': destructible_walls,
+        'health_pickups': health_pickups
+    })
+
     emit('player_joined', {'playerId': player_id, 'data': players_data[player_id]}, broadcast=True, include_self=False)
+
+    emit('game_timer', {
+        'start_time': game_start_time,
+        'time_limit': game_time_limit,
+        'current_time': time.time() * 1000
+    })
 
     print(f'New player connected: {player_name} ({player_id}), sent {len(other_players)} existing players')
 
@@ -199,6 +248,7 @@ def handle_authenticate(data):
     token = data.get('token')
     player_id = data.get('id')
     player_name = data.get('name', 'Anonymous')
+    player_color = data.get('color', '#4285f4')
 
     if token in player_tokens and player_tokens[token]['playerId'] == player_id:
         player_tokens[token]['socket_id'] = request.sid
@@ -210,6 +260,7 @@ def handle_authenticate(data):
         if player_id not in players_data:
             players_data[player_id] = {
                 'name': player_name,
+                'color': player_color,
                 'position': {'x': 400 + (len(players_data) * 50), 'y': 300 + (len(players_data) * 30)},
                 'kills': 0,
                 'bulletCount': 0,
@@ -221,13 +272,24 @@ def handle_authenticate(data):
             }
         else:
             players_data[player_id]['name'] = player_name
+            players_data[player_id]['color'] = player_color
 
         emit('auth_success', {'token': token, 'playerId': player_id})
 
         other_players = {pid: data for pid, data in players_data.items() if pid != player_id}
         emit('players_data', {'players': other_players})
 
+        emit('map_state', {
+            'destructible_walls': destructible_walls,
+            'health_pickups': health_pickups
+        })
+
         emit('player_joined', {'playerId': player_id, 'data': players_data[player_id]}, broadcast=True, include_self=False)
+        emit('game_timer', {
+            'start_time': game_start_time,
+            'time_limit': game_time_limit,
+            'current_time': time.time() * 1000
+        })
         print(f'Player reconnected: {player_name} ({player_id}), sent {len(other_players)} existing players')
     else:
         emit('auth_failed')
@@ -260,6 +322,14 @@ def handle_player_action(data):
         return
     action_data = data.get('action', {})
     player_id = data.get('playerId')
+
+    if action_data.get('type') == 'bullet_wall_hit':
+        bullet_x = action_data.get('bulletX', 0)
+        bullet_y = action_data.get('bulletY', 0)
+        
+        wall_hit = check_bullet_wall_collision(bullet_x, bullet_y)
+        if wall_hit:
+            return
 
     emit('player_action', {
         'playerId': player_id,
@@ -298,6 +368,21 @@ def handle_heartbeat(data):
     player_id = data.get('playerId')
     if player_id in players_data:
         players_data[player_id]['lastUpdate'] = time.time() * 1000
+
+def reset_game():
+    global game_start_time, destructible_walls, health_pickups
+    game_start_time = time.time() * 1000
+    initialize_map_objects()
+    
+    socketio.emit('game_reset', {
+        'start_time': game_start_time,
+        'time_limit': game_time_limit,
+        'current_time': time.time() * 1000,
+        'destructible_walls': destructible_walls,
+        'health_pickups': health_pickups
+    })
+    
+    print('Game reset with a new 5-minute round')
 
 if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0", port=7895, debug=True)

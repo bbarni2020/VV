@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIVID VIOLENCE</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="lobby-container">
+        <div class="lobby-title">VIVID VIOLENCE</div>
+        <div class="lobby-subtitle">2D NINTENDO STYLED SHOOTING GAME</div>
+        
+        <div class="lobby-section">
+            <div class="lobby-text">TO PLAY, OPEN THE GAME IN TWO DIFFERENT OR DEVICES.</div>
+            <div class="lobby-text">USE WASD OR ARROWS TO MOVE, CLICK TO SHOOT, SPACE TO SHOOT UP, AND R TO RELOAD.</div>
+            <div class="lobby-text">GRAY WALLS ARE SOLID, GREEN WALLS ARE BOUNCY.</div>
+            <div class="lobby-text">ENJOY THE GAME!</div>
+        </div>
+        
+        <div class="lobby-buttons">
+            <a href="game.html" class="lobby-button lobby-button-play">PLAY GAME</a>
+            <button class="lobby-button lobby-button-settings" id="settingsBtn">SETTINGS</button>
+        </div>
+        
+        <div class="settings-panel" id="settingsPanel" style="display: none;">
+            <div class="settings-title">SETTINGS</div>
+            <div class="settings-item">
+                <label for="name">NAME:</label>
+                <input type="text" name="name" id="name" placeholder="ENTER YOUR NAME" class="settings-input">
+            </div>
+            <div class="settings-item">
+                <label for="color">COLOR:</label>
+                <input type="color" name="color" id="color" value="#ff0000" class="settings-color">
+            </div>
+            <div class="settings-item">
+                <label for="serverUrl">SERVER URL:</label>
+                <input type="text" name="serverUrl" id="serverUrl" placeholder="http://localhost:7895" class="settings-input">
+            </div>
+            <button class="lobby-button lobby-button-close" id="closeBtn">CLOSE</button>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('settingsBtn').addEventListener('click', function() {
+            document.getElementById('settingsPanel').style.display = 'block';
+        });
+        
+        document.getElementById('closeBtn').addEventListener('click', function() {
+            document.getElementById('settingsPanel').style.display = 'none';
+        });
+        
+        const name = localStorage.getItem('playerName');
+        if (name) {
+            document.getElementById('name').value = name;
+        }
+        
+        const color = localStorage.getItem('playerColor');
+        if (color) {
+            document.getElementById('color').value = color;
+        }
+        
+        const serverUrl = localStorage.getItem('serverUrl');
+        if (serverUrl) {
+            document.getElementById('serverUrl').value = serverUrl;
+        } else {
+            document.getElementById('serverUrl').value = 'http://localhost:7895';
+        }
+        
+        document.getElementById('name').addEventListener('input', function() {
+            localStorage.setItem('playerName', this.value);
+        });
+        
+        document.getElementById('color').addEventListener('input', function() {
+            localStorage.setItem('playerColor', this.value);
+        });
+        
+        document.getElementById('serverUrl').addEventListener('input', function() {
+            localStorage.setItem('serverUrl', this.value);
+        });
+    </script>
+</body>
+</html>

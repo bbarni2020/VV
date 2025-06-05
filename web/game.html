@@ -16,11 +16,16 @@
         <div id="reloadStatus" style="display: none;">RELOADING: <span id="reloadTime">0</span>s</div>
         <div>BULLETS: <span id="bulletCount">0</span></div>
         <div>PLAYERS: <span id="playerCount">1</span></div>
+        <div>TIME: <span id="gameTime">10:00</span></div>
         <div>STATUS: <span id="connectionStatus">CONNECTING...</span></div>
     </div>
     <div class="controls">
         WASD/ARROWS: MOVE | CLICK: SHOOT | SPACE: SHOOT UP | R: RELOAD<br>
         GRAY: SOLID WALLS | GREEN: BOUNCY WALLS
+    </div>
+    <div id="connectionErrorBox" style="display: none;" class="connection-error-box">
+        <div>SERVER CONNECTION FAILED</div>
+        <button id="backToLobby" class="lobby-button">BACK TO LOBBY</button>
     </div>
     <div id="loadingScreen" class="loading-screen">
         <div class="loading-container">

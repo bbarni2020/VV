@@ -267,6 +267,30 @@ function update(deltaTime) {
     const otherPlayers = getOtherPlayers();
     const totalPlayers = Object.keys(otherPlayers).length + 1;
     document.getElementById('playerCount').textContent = totalPlayers;
+    
+    const currentTime = Date.now();
+    const timeElapsed = currentTime - window.gameStartTime;
+    const timeRemaining = Math.max(0, window.gameTimeLimit - timeElapsed);
+    const minutes = Math.floor(timeRemaining / 60000);
+    const seconds = Math.floor((timeRemaining % 60000) / 1000);
+    const timeElement = document.getElementById('gameTime');
+    if (timeElement) {
+        timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    if (timeRemaining <= 0 && !gameEnded) {
+        gameEnded = true;
+        
+        const statusElement = document.getElementById('connectionStatus');
+        if (statusElement) {
+            statusElement.textContent = 'ROUND ENDED';
+            statusElement.style.color = '#ffcc00';
+        }
+        
+        setTimeout(() => {
+            gameEnded = false;
+        }, 3000);
+    }
 }
 
 function drawBackground(ctx, cameraX, cameraY) {
@@ -499,6 +523,14 @@ function drawOtherPlayerReload(ctx, playerData, cameraX, cameraY) {
     ctx.restore();
 }
 
+let gameStartTime = Date.now();
+let gameTimeLimit = 10 * 60 * 1000;
+let gameEnded = false;
+
+window.gameStartTime = gameStartTime;
+window.gameTimeLimit = gameTimeLimit;
+window.resetPlayerState = resetPlayerState;
+
 function render() {
     ctx.fillStyle = '#0f3460';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -610,6 +642,24 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+document.getElementById('menu').addEventListener('click', (event) => {
+    if (event.target.textContent === 'Resume') {
+        const menu = document.getElementById('menu');
+        menu.classList.remove('show');
+    } else if (event.target.textContent === 'Leave') {
+        window.location.href = 'index.html';
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const backButton = document.getElementById('backToLobby');
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+    }
+});
+
 window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -632,7 +682,23 @@ const volumeSlider = document.getElementById('volume');
 volumeSlider.addEventListener('input', (event) => {
     const volumeValue = event.target.value;
     console.log(`Volume set to: ${volumeValue}`);
-    // Here you can integrate the volume value with your game's audio system
 });
 
 requestAnimationFrame(gameLoop);
+
+function resetPlayerState() {
+
+    player.health = 100;
+    player.isDead = false;
+    player.ammo = player.maxAmmo;
+    player.reloadTime = 0;
+    
+
+    const safeSpawn = gameMap.getSafeSpawnPosition(20);
+    player.position.x = safeSpawn.x;
+    player.position.y = safeSpawn.y;
+    
+    bullets.length = 0;
+    otherPlayerBullets.length = 0;
+    explosions.length = 0;
+}

@@ -1,4 +1,5 @@
-const socket = io('http://localhost:7895');
+const serverUrl = localStorage.getItem('serverUrl') || 'http://localhost:7895';
+const socket = io(serverUrl);
 
 let playerName = null;
 let playerId = null;
@@ -33,7 +34,7 @@ function stopHeartbeat() {
 
 
 socket.on('connect', () => {
-    console.log('Connected to the server');
+    console.log('Connected to the server at: ' + serverUrl);
     
     playerName = localStorage.getItem('playerName');
     
@@ -57,6 +58,25 @@ socket.on('disconnect', () => {
         statusElement.style.color = '#ff0000';
     }
 })
+
+socket.on('connect_error', (error) => {
+    console.error('Connection error:', error);
+    
+    const statusElement = document.getElementById('connectionStatus');
+    if (statusElement) {
+        statusElement.textContent = 'CONNECTION ERROR';
+        statusElement.style.color = '#ff0000';
+    }
+    
+    const errorBox = document.getElementById('connectionErrorBox');
+    if (errorBox) {
+        errorBox.style.display = 'block';
+    }
+    
+    if (window.hideLoadingScreen) {
+        window.hideLoadingScreen();
+    }
+});
 
 socket.on('auth_success', (data) => {
     playerId = data.playerId;
@@ -224,6 +244,59 @@ socket.on('map_state', (data) => {
 socket.on('error_message', (message) => {
     console.error('Server error: ', message);
 })
+
+socket.on('game_timer', (data) => {
+    if (window.gameStartTime !== undefined) {
+        window.gameStartTime = data.start_time;
+        window.gameTimeLimit = data.time_limit;
+    }
+});
+
+socket.on('game_reset', (data) => {
+    console.log('Game reset received');
+    
+    if (window.gameMap) {
+        window.gameMap.updateMapState(data.destructible_walls, data.health_pickups);
+    }
+    
+    if (window.gameStartTime !== undefined) {
+        window.gameStartTime = data.start_time;
+        window.gameTimeLimit = data.time_limit;
+    }
+    
+    // Reset player state if the function exists
+    if (window.resetPlayerState) {
+        window.resetPlayerState();
+    }
+    
+    // Notify players about the reset
+    const statusElement = document.getElementById('connectionStatus');
+    if (statusElement) {
+        statusElement.textContent = 'NEW ROUND';
+        statusElement.style.color = '#ffcc00';
+        
+        // Reset back to normal after 3 seconds
+        setTimeout(() => {
+            if (statusElement) {
+                statusElement.textContent = 'CONNECTED';
+                statusElement.style.color = '#00ff00';
+            }
+        }, 3000);
+    }
+    
+    // Show a notification on screen
+    const notification = document.createElement('div');
+    notification.className = 'game-notification';
+    notification.textContent = 'NEW ROUND STARTED';
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 1000);
+    }, 2000);
+});
 
 function authenticatePlayer() {
     if (!playerName) {
