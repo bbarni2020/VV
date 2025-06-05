@@ -11,6 +11,10 @@
         <div class="lobby-title">VIVID VIOLENCE</div>
         <div class="lobby-subtitle">2D NINTENDO STYLED SHOOTING GAME</div>
         
+        <div class="quote-container" id="quoteContainer">
+            <div class="quote-text" id="quoteText">Loading quote...</div>
+        </div>
+        
         <div class="lobby-section">
             <div class="lobby-text">TO PLAY, OPEN THE GAME IN TWO DIFFERENT OR DEVICES.</div>
             <div class="lobby-text">USE WASD OR ARROWS TO MOVE, CLICK TO SHOOT, SPACE TO SHOOT UP, AND R TO RELOAD.</div>
@@ -37,6 +41,15 @@
                 <label for="serverUrl">SERVER URL:</label>
                 <input type="text" name="serverUrl" id="serverUrl" placeholder="http://localhost:7895" class="settings-input">
             </div>
+            <div class="settings-item">
+                <label for="saveUser">SAVE USER DATA TO SERVER:</label>
+                <div class="settings-buttons">
+                    <button id="saveUserBtn" class="settings-button">SAVE</button>
+                    <button id="getUserBtn" class="settings-button">FETCH</button>
+                    <button id="deleteUserBtn" class="settings-button">DELETE</button>
+                </div>
+            </div>
+            <div id="serverResponse" class="server-response"></div>
             <button class="lobby-button lobby-button-close" id="closeBtn">CLOSE</button>
         </div>
     </div>
@@ -78,6 +91,152 @@
         document.getElementById('serverUrl').addEventListener('input', function() {
             localStorage.setItem('serverUrl', this.value);
         });
+        
+        function fetchQuote() {
+            const userApiUrl = 'http://localhost:4765';
+            
+            fetch(`${userApiUrl}/get_quote`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.quote) {
+                        document.getElementById('quoteText').innerText = data.quote;
+                    } else {
+                        document.getElementById('quoteText').innerText = 'Ready to play?';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching quote:', error);
+                    document.getElementById('quoteText').innerText = 'Ready to play?';
+                });
+        }
+        
+
+        document.getElementById('saveUserBtn').addEventListener('click', function() {
+            const userApiUrl = document.getElementById('serverUrl').value.replace(':7895', ':4765');
+            const playerName = document.getElementById('name').value;
+            const playerColor = document.getElementById('color').value;
+            
+            fetch(`${userApiUrl}/auth`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: playerName,
+                    color: playerColor
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('serverResponse').innerText = 'User data saved successfully!';
+                setTimeout(() => {
+                    document.getElementById('serverResponse').innerText = '';
+                }, 3000);
+            })
+            .catch(error => {
+                console.error('Error saving user data:', error);
+                document.getElementById('serverResponse').innerText = 'Error saving user data.';
+            });
+        });
+        
+        document.getElementById('getUserBtn').addEventListener('click', function() {
+            const userApiUrl = document.getElementById('serverUrl').value.replace(':7895', ':4765');
+            
+            fetch(`${userApiUrl}/get`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.name && data.color) {
+                        document.getElementById('name').value = data.name;
+                        document.getElementById('color').value = data.color;
+                        localStorage.setItem('playerName', data.name);
+                        localStorage.setItem('playerColor', data.color);
+                        document.getElementById('serverResponse').innerText = 'User data fetched successfully!';
+                    } else {
+                        document.getElementById('serverResponse').innerText = 'No user data found.';
+                    }
+                    setTimeout(() => {
+                        document.getElementById('serverResponse').innerText = '';
+                    }, 3000);
+                })
+                .catch(error => {
+                    console.error('Error fetching user data:', error);
+                    document.getElementById('serverResponse').innerText = 'Error fetching user data.';
+                });
+        });
+        
+        document.getElementById('deleteUserBtn').addEventListener('click', function() {
+            const userApiUrl = document.getElementById('serverUrl').value.replace(':7895', ':4765');
+            
+            fetch(`${userApiUrl}/delete`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('serverResponse').innerText = 'User data deleted successfully!';
+                setTimeout(() => {
+                    document.getElementById('serverResponse').innerText = '';
+                }, 3000);
+            })
+            .catch(error => {
+                console.error('Error deleting user data:', error);
+                document.getElementById('serverResponse').innerText = 'Error deleting user data.';
+            });
+        });
+        
+        let nameUpdateTimeout, colorUpdateTimeout;
+        
+        document.getElementById('name').addEventListener('input', function() {
+            localStorage.setItem('playerName', this.value);
+            
+            clearTimeout(nameUpdateTimeout);
+            nameUpdateTimeout = setTimeout(() => {
+                const userApiUrl = document.getElementById('serverUrl').value.replace(':7895', ':4765');
+                
+                fetch(`${userApiUrl}/edit/name`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: this.value
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+
+                })
+                .catch(error => {
+                    console.error('Error updating name:', error);
+                });
+            }, 1000);
+        });
+        
+        document.getElementById('color').addEventListener('input', function() {
+            localStorage.setItem('playerColor', this.value);
+            
+            clearTimeout(colorUpdateTimeout);
+            colorUpdateTimeout = setTimeout(() => {
+                const userApiUrl = document.getElementById('serverUrl').value.replace(':7895', ':4765');
+                
+                fetch(`${userApiUrl}/edit/color`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        color: this.value
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                })
+                .catch(error => {
+                    console.error('Error updating color:', error);
+                });
+            }, 1000);
+        });
+        
+        document.addEventListener('DOMContentLoaded', fetchQuote);
     </script>
 </body>
 </html>
