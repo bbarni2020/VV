@@ -120,7 +120,7 @@ def is_client_connected(sid):
         if current_time - session.get('connect_time', 0) < 30000:
             return True
             
-        return socketio.server.manager.is_connected(sid)
+        return socketio.server.manager.is_connected(sid, namespace='/')
     except Exception as e:
         logger.error(f"Error checking client connection for {sid}: {str(e)}")
         return False
