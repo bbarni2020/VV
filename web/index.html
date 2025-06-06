@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VIVID VIOLENCE</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body>
     <div class="lobby-container">
@@ -77,7 +78,7 @@
         if (serverUrl) {
             document.getElementById('serverUrl').value = serverUrl;
         } else {
-            document.getElementById('serverUrl').value = 'http://localhost:7895';
+            document.getElementById('serverUrl').value = 'https://vv.bbarni.hackclub.app';
         }
         
         document.getElementById('name').addEventListener('input', function() {
@@ -240,15 +241,7 @@
         });
         
         function getUserApiUrl() {
-            const serverUrl = document.getElementById('serverUrl').value || localStorage.getItem('serverUrl') || 'http://localhost:7895';
-            if (serverUrl.includes('://')) {
-                const url = new URL(serverUrl);
-                return `${url.protocol}//${url.hostname}:4765`;
-            } else if (serverUrl.includes(':')) {
-                const parts = serverUrl.split(':');
-                return `http://${parts[0]}:4765`;
-            }
-            return 'http://192.168.31.74:4765';
+            return 'https://quotes.bbarni.hackclub.app';
         }
         
         document.addEventListener('DOMContentLoaded', fetchQuote);

@@ -1,4 +1,4 @@
-const serverUrl = localStorage.getItem('serverUrl') || 'http://localhost:7895';
+const serverUrl = localStorage.getItem('serverUrl') || 'https://vv.bbarni.hackclub.app';
 console.log('Connecting to multiplayer server at:', serverUrl);
 const socket = io(serverUrl, {
     transports: ['websocket', 'polling'],
