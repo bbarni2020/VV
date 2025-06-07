@@ -2,25 +2,22 @@
 
 set -e
 
-kill_port() {
-    echo "Checking for processes on ports 7895 and 4567..."
-    pid1=$(lsof -ti:7895)
-    if [ -n "$pid1" ]; then
-        echo "Killing process on port 7895 (PID: $pid1)..."
-        kill -9 $pid1
-    else
-        echo "No process running on port 7895."
-    fi
-    pid2=$(lsof -ti:4765)
-    if [ -n "$pid2" ]; then
-        echo "Killing process on port 4765 (PID: $pid2)..."
-        kill -9 $pid2
-    else
-        echo "No process running on port 4765."
-    fi
+kill_ports() {
+    local ports=("7895" "4765")
+    
+    for port in "${ports[@]}"; do
+        echo "Checking for processes on port $port..."
+        pid=$(lsof -ti:$port)
+        if [ -n "$pid" ]; then
+            echo "Killing process on port $port (PID: $pid)..."
+            kill -9 $pid
+        else
+            echo "No process running on port $port."
+        fi
+    done
 }
 
-kill_port
+kill_ports
 
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."
@@ -33,6 +30,7 @@ if [ -f "requirements.txt" ]; then
     echo "Installing dependencies..."
     pip install -r requirements.txt
 fi
+
 
 echo "Starting launcher.py..."
 python launcher.py

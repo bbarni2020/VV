@@ -40,7 +40,10 @@
             </div>
             <div class="settings-item">
                 <label for="serverUrl">SERVER URL:</label>
-                <input type="text" name="serverUrl" id="serverUrl" placeholder="http://localhost:7895" class="settings-input">
+                <div class="settings-buttons">
+                    <input type="text" name="serverUrl" id="serverUrl" placeholder="http://localhost:7895" class="settings-input" style="flex: 1; margin-right: 10px;">
+                    <button id="defaultServerBtn" class="settings-button">DEFAULT</button>
+                </div>
             </div>
             <div class="settings-item">
                 <label for="saveUser">SAVE USER DATA TO SERVER:</label>
@@ -91,6 +94,12 @@
         
         document.getElementById('serverUrl').addEventListener('input', function() {
             localStorage.setItem('serverUrl', this.value);
+        });
+        
+        document.getElementById('defaultServerBtn').addEventListener('click', function() {
+            const defaultUrl = 'https://vv.bbarni.hackclub.app';
+            document.getElementById('serverUrl').value = defaultUrl;
+            localStorage.setItem('serverUrl', defaultUrl);
         });
         
         function fetchQuote() {
@@ -245,6 +254,11 @@
         }
         
         document.addEventListener('DOMContentLoaded', fetchQuote);
+        
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('socketId');
+        localStorage.removeItem('playerId');
+        localStorage.removeItem('gameSessionId');
     </script>
 </body>
 </html>

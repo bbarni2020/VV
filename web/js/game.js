@@ -135,14 +135,15 @@ function update(deltaTime) {
         bullets[i].update();
         
         const otherPlayers = getOtherPlayers();
-        let hitPlayer = false;
+        let bulletRemoved = false;
         
-        Object.keys(otherPlayers).forEach(playerId => {
+        for (const playerId of Object.keys(otherPlayers)) {
             const otherPlayer = otherPlayers[playerId];
-            if (otherPlayer.isDead) return;
+            if (otherPlayer.isDead) continue;
             
-            const dx = bullets[i].position.x - otherPlayer.displayPosition.x;
-            const dy = bullets[i].position.y - otherPlayer.displayPosition.y;
+            const playerPos = otherPlayer.displayPosition || otherPlayer.position;
+            const dx = bullets[i].position.x - playerPos.x;
+            const dy = bullets[i].position.y - playerPos.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
             if (distance < bullets[i].radius + 10) {
@@ -154,12 +155,12 @@ function update(deltaTime) {
                     timestamp: Date.now()
                 });
                 bullets.splice(i, 1);
-                hitPlayer = true;
-                return;
+                bulletRemoved = true;
+                break;
             }
-        });
+        }
         
-        if (hitPlayer) continue;
+        if (bulletRemoved) continue;
         
         if (!player.isDead) {
             const dx = bullets[i].position.x - player.position.x;
@@ -181,16 +182,20 @@ function update(deltaTime) {
                         });
                     }
                     bullets.splice(i, 1);
-                    continue;
+                    bulletRemoved = true;
                 }
             }
         }
         
-        const shouldRemove = bounceOffWalls(bullets[i], gameMap.width, gameMap.height, gameMap);
+        if (bulletRemoved) continue;
         
-        if (shouldRemove) {
-            explosions.push(new Explosion(bullets[i].position.x, bullets[i].position.y));
-            bullets.splice(i, 1);
+        if (i < bullets.length && bullets[i]) {
+            const shouldRemove = bounceOffWalls(bullets[i], gameMap.width, gameMap.height, gameMap);
+            
+            if (shouldRemove) {
+                explosions.push(new Explosion(bullets[i].position.x, bullets[i].position.y));
+                bullets.splice(i, 1);
+            }
         }
     }
     
@@ -223,11 +228,13 @@ function update(deltaTime) {
             }
         }
         
-        const shouldRemove = bounceOffWalls(otherPlayerBullets[i], gameMap.width, gameMap.height, gameMap);
-        
-        if (shouldRemove) {
-            explosions.push(new Explosion(otherPlayerBullets[i].position.x, otherPlayerBullets[i].position.y));
-            otherPlayerBullets.splice(i, 1);
+        if (i < otherPlayerBullets.length && otherPlayerBullets[i]) {
+            const shouldRemove = bounceOffWalls(otherPlayerBullets[i], gameMap.width, gameMap.height, gameMap);
+            
+            if (shouldRemove) {
+                explosions.push(new Explosion(otherPlayerBullets[i].position.x, otherPlayerBullets[i].position.y));
+                otherPlayerBullets.splice(i, 1);
+            }
         }
     }
     
