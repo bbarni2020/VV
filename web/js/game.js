@@ -3,6 +3,7 @@ import Bullet from './bullet.js';
 import Explosion from './explosion.js';
 import Map from './map.js';
 import input from './input.js';
+import MobileControls from './mobile.js';
 import { bounceOffWalls } from './physics.js';
 import { sendPlayerAction, sendPlayerInfo, getAuthenticationStatus, getOtherPlayers, socket, updateOtherPlayers, playerName, getPlayerId } from './multiplayer.js';
 
@@ -27,6 +28,15 @@ const player = new Player(safeSpawn.x, safeSpawn.y, 5, playerColor);
 const bullets = [];
 const explosions = [];
 const otherPlayerBullets = [];
+
+const mobileControls = new MobileControls();
+let mobileInputState = { left: false, right: false, up: false, down: false, shoot: false, reload: false };
+let lastMobileShot = 0;
+let lastMobileReload = 0;
+const mobileShotCooldown = 150;
+const mobileReloadCooldown = 500;
+
+console.log('Mobile controls active:', mobileControls.isActive());
 
 let kills = 0;
 let lastTime = 0;
@@ -96,21 +106,55 @@ function update(deltaTime) {
     
     let playerMoved = false;
 
-    if (input.isKeyPressed('KeyW') || input.isKeyPressed('ArrowUp')) {
+    if (mobileControls.isActive()) {
+        mobileInputState = mobileControls.getInputState();
+    }
+
+    if (input.isKeyPressed('KeyW') || input.isKeyPressed('ArrowUp') || mobileInputState.up) {
         player.move('up', gameMap);
         playerMoved = true;
     }
-    if (input.isKeyPressed('KeyS') || input.isKeyPressed('ArrowDown')) {
+    if (input.isKeyPressed('KeyS') || input.isKeyPressed('ArrowDown') || mobileInputState.down) {
         player.move('down', gameMap);
         playerMoved = true;
     }
-    if (input.isKeyPressed('KeyA') || input.isKeyPressed('ArrowLeft')) {
+    if (input.isKeyPressed('KeyA') || input.isKeyPressed('ArrowLeft') || mobileInputState.left) {
         player.move('left', gameMap);
         playerMoved = true;
     }
-    if (input.isKeyPressed('KeyD') || input.isKeyPressed('ArrowRight')) {
+    if (input.isKeyPressed('KeyD') || input.isKeyPressed('ArrowRight') || mobileInputState.right) {
         player.move('right', gameMap);
         playerMoved = true;
+    }
+
+    const mobileShootTime = Date.now();
+    if (mobileInputState.shoot && !player.isDead && player.ammo > 0 && player.reloadTime <= 0 && 
+        mobileShootTime - lastMobileShot >= mobileShotCooldown) {
+        
+        const shootDirection = mobileControls.getShootingDirection(player.position.x, player.position.y);
+        
+        console.log('Mobile directional shooting:', shootDirection);
+        const bulletData = player.shoot(shootDirection.targetX, shootDirection.targetY);
+        
+        if (bulletData) {
+            bullets.push(new Bullet(bulletData.x, bulletData.y, bulletData.velocityX, bulletData.velocityY, getPlayerId()));
+            sendPlayerAction({
+                type: 'shoot',
+                position: { x: bulletData.x, y: bulletData.y },
+                velocity: { x: bulletData.velocityX, y: bulletData.velocityY },
+                timestamp: Date.now()
+            });
+            
+            console.log('Bullet created with velocity:', { vx: bulletData.velocityX, vy: bulletData.velocityY });
+            lastMobileShot = mobileShootTime;
+        }
+    }
+
+    const mobileReloadTime = Date.now();
+    if (mobileInputState.reload && !player.isDead && player.reloadTime <= 0 && player.ammo < player.maxAmmo &&
+        mobileReloadTime - lastMobileReload >= mobileReloadCooldown) {
+        player.reloadTime = player.reloadDuration;
+        lastMobileReload = mobileReloadTime;
     }
     
     const now = Date.now();

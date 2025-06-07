@@ -57,6 +57,27 @@
         </div>
     </div>
     <canvas id="gameCanvas"></canvas>
+    
+    <div class="mobile-controls" id="mobileControls">
+        <div class="joystick-container left-joystick" id="movementJoystickContainer">
+            <div class="joystick-base">
+                <div class="joystick-stick" id="movementJoystickStick"></div>
+            </div>
+            <div class="joystick-label">MOVE</div>
+        </div>
+        
+        <div class="joystick-container right-joystick" id="shootingJoystickContainer">
+            <div class="joystick-base">
+                <div class="joystick-stick" id="shootingJoystickStick"></div>
+            </div>
+            <div class="joystick-label">AIM</div>
+        </div>
+        
+        <div class="mobile-buttons">
+            <button class="mobile-btn reload-btn" id="mobileReloadBtn">R</button>
+        </div>
+    </div>
+    
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
     <script type="module" src="js/multiplayer.js"></script>
     <script type="module" src="js/game.js"></script>

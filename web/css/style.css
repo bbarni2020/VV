@@ -564,3 +564,271 @@ canvas {
     height: 20px;
     text-align: center;
 }
+
+.mobile-controls {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.joystick-container {
+    position: absolute;
+    bottom: 20px;
+    pointer-events: all;
+}
+
+.left-joystick {
+    left: 20px;
+}
+
+.left-joystick .joystick-stick {
+    background: rgba(0, 255, 100, 0.8);
+    box-shadow: 0 0 15px rgba(0, 255, 100, 0.5);
+}
+
+.right-joystick {
+    right: 120px;
+}
+
+.right-joystick .joystick-stick {
+    background: rgba(255, 100, 0, 0.8);
+    box-shadow: 0 0 15px rgba(255, 100, 0, 0.5);
+}
+
+.joystick-base {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    touch-action: none;
+}
+
+.joystick-stick {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(0, 255, 255, 0.8);
+    border: 2px solid #ffffff;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.1s ease;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+}
+
+.joystick-label {
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    pointer-events: none;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+}
+
+.left-joystick .joystick-label {
+    color: rgba(0, 255, 100, 0.9);
+}
+
+.right-joystick .joystick-label {
+    color: rgba(255, 100, 0, 0.9);
+}
+
+.mobile-buttons {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    pointer-events: all;
+}
+
+.mobile-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    text-shadow: 2px 2px 0px #000000;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    transition: all 0.1s ease;
+}
+
+.mobile-btn:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.shoot-btn {
+    background: rgba(255, 0, 0, 0.2);
+    border-color: #ff0000;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+}
+
+.shoot-btn:active {
+    background: rgba(255, 0, 0, 0.4);
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+}
+
+.reload-btn {
+    background: rgba(0, 255, 0, 0.2);
+    border-color: #00ff00;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+}
+
+.reload-btn:active {
+    background: rgba(0, 255, 0, 0.4);
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+}
+
+@media (max-width: 768px) or (max-height: 768px) {
+    .mobile-controls {
+        display: block;
+    }
+    
+    .game-ui {
+        font-size: 10px;
+        top: 10px;
+        left: 10px;
+    }
+    
+    .title {
+        font-size: 16px;
+        top: 10px;
+        right: 10px;
+    }
+    
+    .controls {
+        display: none;
+    }
+    
+    canvas {
+        border: 2px solid #ffffff;
+    }
+    
+    body {
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .lobby-container {
+        padding: 10px;
+    }
+    
+    .lobby-title {
+        font-size: 20px;
+    }
+    
+    .lobby-subtitle {
+        font-size: 8px;
+    }
+    
+    .lobby-text {
+        font-size: 6px;
+        margin: 5px 0;
+    }
+    
+    .lobby-button {
+        font-size: 10px;
+        padding: 10px 15px;
+        margin: 5px;
+    }
+    
+    .settings-panel {
+        width: 90%;
+        left: 5%;
+        top: 10%;
+        height: 80%;
+        overflow-y: auto;
+    }
+    
+    .settings-title {
+        font-size: 14px;
+    }
+    
+    .settings-input {
+        font-size: 10px;
+        padding: 8px;
+    }
+    
+    .settings-button {
+        font-size: 8px;
+        padding: 8px 12px;
+    }
+    
+    .quote-container {
+        padding: 10px;
+    }
+    
+    .quote-text {
+        font-size: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-ui {
+        font-size: 8px;
+    }
+    
+    .title {
+        font-size: 12px;
+    }
+    
+    .joystick-base {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .joystick-stick {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .right-joystick {
+        right: 80px;
+    }
+    
+    .mobile-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 8px;
+    }
+    
+    .joystick-label {
+        font-size: 10px;
+        bottom: -20px;
+    }
+    
+    .lobby-title {
+        font-size: 16px;
+    }
+    
+    .lobby-text {
+        font-size: 5px;
+    }
+    
+    .settings-input {
+        font-size: 8px;
+    }
+}
