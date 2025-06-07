@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>VIVID VIOLENCE</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
@@ -79,6 +82,29 @@
     </div>
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
+    <script>
+        function handleOrientationChange() {
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+                document.body.scrollTop = 0;
+                document.documentElement.scrollTop = 0;
+            }, 100);
+        }
+        
+        window.addEventListener('orientationchange', handleOrientationChange);
+        window.addEventListener('resize', handleOrientationChange);
+        
+        document.addEventListener('touchmove', function(e) {
+            if (e.target.closest('.settings-panel') || e.target.closest('.mobile-controls')) {
+                return;
+            }
+            e.preventDefault();
+        }, { passive: false });
+        
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+    </script>
     <script type="module" src="js/multiplayer.js"></script>
     <script type="module" src="js/game.js"></script>
 </body>

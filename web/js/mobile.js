@@ -96,6 +96,7 @@ class MobileControls {
         
         const handleStart = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             this.movementJoystick.active = true;
             
             const rect = container.getBoundingClientRect();
@@ -110,26 +111,40 @@ class MobileControls {
         
         const handleMove = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             if (!this.movementJoystick.active) return;
             
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            this.updateMovementJoystick(clientX, clientY);
+            if (e.touches) {
+                for (let i = 0; i < e.touches.length; i++) {
+                    const touch = e.touches[i];
+                    const rect = container.getBoundingClientRect();
+                    if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                        touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                        this.updateMovementJoystick(touch.clientX, touch.clientY);
+                        break;
+                    }
+                }
+            } else {
+                this.updateMovementJoystick(e.clientX, e.clientY);
+            }
         };
         
         const handleEnd = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             this.movementJoystick.active = false;
             this.resetMovementJoystick();
         };
         
-        container.addEventListener('touchstart', handleStart);
-        container.addEventListener('touchmove', handleMove);
-        container.addEventListener('touchend', handleEnd);
+        container.addEventListener('touchstart', handleStart, { passive: false });
+        container.addEventListener('touchmove', handleMove, { passive: false });
+        container.addEventListener('touchend', handleEnd, { passive: false });
+        container.addEventListener('touchcancel', handleEnd, { passive: false });
+        
         container.addEventListener('mousedown', handleStart);
-        document.addEventListener('mousemove', handleMove);
-        document.addEventListener('mouseup', handleEnd);
+        container.addEventListener('mousemove', handleMove);
+        container.addEventListener('mouseup', handleEnd);
+        container.addEventListener('mouseleave', handleEnd);
     }
     
     setupShootingJoystick() {
@@ -138,6 +153,7 @@ class MobileControls {
         
         const handleStart = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             this.shootingJoystick.active = true;
             
             const rect = container.getBoundingClientRect();
@@ -154,27 +170,41 @@ class MobileControls {
         
         const handleMove = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             if (!this.shootingJoystick.active) return;
             
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            this.updateShootingJoystick(clientX, clientY);
+            if (e.touches) {
+                for (let i = 0; i < e.touches.length; i++) {
+                    const touch = e.touches[i];
+                    const rect = container.getBoundingClientRect();
+                    if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                        touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                        this.updateShootingJoystick(touch.clientX, touch.clientY);
+                        break;
+                    }
+                }
+            } else {
+                this.updateShootingJoystick(e.clientX, e.clientY);
+            }
         };
         
         const handleEnd = (e) => {
             e.preventDefault();
+            e.stopPropagation();
             this.shootingJoystick.active = false;
             this.inputState.shoot = false;
             this.resetShootingJoystick();
         };
         
-        container.addEventListener('touchstart', handleStart);
-        container.addEventListener('touchmove', handleMove);
-        container.addEventListener('touchend', handleEnd);
+        container.addEventListener('touchstart', handleStart, { passive: false });
+        container.addEventListener('touchmove', handleMove, { passive: false });
+        container.addEventListener('touchend', handleEnd, { passive: false });
+        container.addEventListener('touchcancel', handleEnd, { passive: false });
+        
         container.addEventListener('mousedown', handleStart);
-        document.addEventListener('mousemove', handleMove);
-        document.addEventListener('mouseup', handleEnd);
+        container.addEventListener('mousemove', handleMove);
+        container.addEventListener('mouseup', handleEnd);
+        container.addEventListener('mouseleave', handleEnd);
     }
     
     updateMovementJoystick(clientX, clientY) {
