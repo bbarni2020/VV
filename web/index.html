@@ -61,7 +61,12 @@
         </div>
     </div>
     
-    <script>
+    <script type="module">
+        import { deviceDetection } from './js/device-detection.js';
+        
+        deviceDetection.optimizeForDevice();
+        deviceDetection.preventZoom();
+        
         function addTouchSupport(element) {
             element.addEventListener('touchstart', function(e) {
                 e.preventDefault();

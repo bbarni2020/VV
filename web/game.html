@@ -83,6 +83,68 @@
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
     <script>
+        const deviceDetection = {
+            isMobile: () => {
+                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                       (window.innerWidth <= 768 && window.innerHeight <= 1024) ||
+                       ('ontouchstart' in window) ||
+                       (navigator.maxTouchPoints > 0) ||
+                       (navigator.msMaxTouchPoints > 0);
+            },
+            
+            isTablet: () => {
+                return /iPad|Android/i.test(navigator.userAgent) && 
+                       window.innerWidth >= 768 && window.innerWidth <= 1024;
+            },
+            
+            isDesktop: () => {
+                return !deviceDetection.isMobile() && 
+                       window.innerWidth > 1024 && 
+                       !('ontouchstart' in window);
+            },
+            
+            hasTouch: () => {
+                return ('ontouchstart' in window) || 
+                       (navigator.maxTouchPoints > 0) || 
+                       (navigator.msMaxTouchPoints > 0);
+            },
+            
+            init: () => {
+                const body = document.body;
+                
+                if (deviceDetection.isMobile()) {
+                    body.classList.add('device-mobile');
+                    body.classList.remove('device-desktop', 'device-tablet');
+                } else if (deviceDetection.isTablet()) {
+                    body.classList.add('device-tablet');
+                    body.classList.remove('device-desktop', 'device-mobile');
+                } else {
+                    body.classList.add('device-desktop');
+                    body.classList.remove('device-mobile', 'device-tablet');
+                }
+                
+                if (deviceDetection.hasTouch()) {
+                    body.classList.add('has-touch');
+                } else {
+                    body.classList.add('no-touch');
+                }
+                
+                body.classList.add(window.innerWidth > window.innerHeight ? 'landscape' : 'portrait');
+            }
+        };
+        
+        deviceDetection.init();
+        
+        window.addEventListener('resize', () => {
+            deviceDetection.init();
+        });
+        
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                deviceDetection.init();
+            }, 100);
+        });
+        
         function handleOrientationChange() {
             setTimeout(() => {
                 window.scrollTo(0, 0);

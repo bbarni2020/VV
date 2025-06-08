@@ -398,10 +398,6 @@ function drawOtherPlayer(ctx, playerData, cameraX, cameraY) {
         return;
     }
     
-    if (playerData.clientHit && Date.now() - playerData.clientHitTime < 1000) {
-        return;
-    }
-    
     const size = 20;
     const time = Date.now() * 0.005;
     const displayPos = playerData.displayPosition || playerData.position;

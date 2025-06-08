@@ -276,7 +276,7 @@ canvas {
     text-shadow: 2px 2px 0px #000000;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.15s ease;
     box-shadow: 
         0 0 20px rgba(0, 255, 255, 0.3),
         inset 0 0 20px rgba(0, 0, 0, 0.2);
@@ -343,6 +343,7 @@ canvas {
         inset 0 0 20px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     min-width: 300px;
+    transition: all 0.3s ease;
 }
 
 .settings-title {
@@ -390,12 +391,36 @@ canvas {
 }
 
 .settings-color {
-    width: 50px;
-    height: 30px;
+    width: 60px;
+    height: 40px;
     border: 2px solid #00ffff;
     border-radius: 4px;
     background: transparent;
     cursor: pointer;
+    touch-action: manipulation;
+}
+
+@media (max-width: 768px) {
+    .settings-color {
+        width: 80px;
+        height: 48px;
+        border-radius: 6px;
+    }
+}
+
+.lobby-button-close {
+    width: 100%;
+    margin-top: 20px;
+    min-height: 50px;
+    font-size: 14px;
+    padding: 15px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.lobby-button-close:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
 }
 
 .lobby-button-close {
@@ -591,6 +616,7 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.15s ease;
 }
 
 .settings-button:active {
@@ -741,219 +767,91 @@ canvas {
     box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
 }
 
-@media (max-width: 768px) or (max-height: 768px) {
-    .mobile-controls {
-        display: block;
+@media (max-width: 768px) {
+    .settings-color {
+        width: 80px;
+        height: 48px;
+        border-radius: 6px;
     }
     
-    .game-ui {
-        font-size: 10px;
-        top: 10px;
-        left: 10px;
-    }
-    
-    .title {
-        font-size: 16px;
-        top: 10px;
-        right: 10px;
-    }
-    
-    .controls {
-        display: none;
-    }
-    
-    canvas {
-        border: 2px solid #ffffff;
-    }
-    
-    body {
-        overflow: hidden;
-        position: fixed;
+    .lobby-button-close {
         width: 100%;
-        height: 100%;
-        background: linear-gradient(45deg, #1a1a2e, #16213e);
-        background-attachment: fixed;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    html {
-        position: fixed;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-    }
-    
-    .lobby-container {
+        margin-top: 20px;
+        min-height: 50px;
+        font-size: 14px;
         padding: 15px;
-        padding-top: max(15px, env(safe-area-inset-top));
-        padding-bottom: max(15px, env(safe-area-inset-bottom));
-        padding-left: max(15px, env(safe-area-inset-left));
-        padding-right: max(15px, env(safe-area-inset-right));
-        min-height: 100vh;
-        min-height: 100dvh;
-        width: 100%;
-        max-width: 100vw;
-        overflow-x: hidden;
-    }
-    
-    .lobby-title {
-        font-size: 24px;
-        margin-bottom: 15px;
-    }
-    
-    .lobby-subtitle {
-        font-size: 10px;
-        margin-bottom: 20px;
-    }
-    
-    .lobby-text {
-        font-size: 8px;
-        margin: 8px 0;
-        line-height: 1.4;
-    }
-    
-    .lobby-button {
-        font-size: 12px;
-        padding: 12px 20px;
-        margin: 8px 0;
-        width: 100%;
-        max-width: 300px;
-        min-height: 48px;
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
     }
     
-    .lobby-button:active {
+    .lobby-button-close:active {
         transform: scale(0.98);
         transition: transform 0.1s ease;
     }
     
-    .settings-panel {
-        width: 95%;
-        left: 2.5%;
-        top: 5%;
-        height: 90%;
-        max-height: 90vh;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 20px;
-        box-sizing: border-box;
-        touch-action: pan-y;
+    .settings-item label {
+        font-size: 11px;
+        margin-bottom: 8px;
+        display: block;
     }
     
-    .settings-title {
-        font-size: 16px;
+    .server-response {
+        font-size: 12px;
+        margin: 15px 0;
+        min-height: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .settings-panel {
+        max-height: calc(100vh - 20px);
+        max-height: calc(100dvh - 20px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        top: 10px;
+        transform: translateX(-50%);
+        left: 50%;
+        padding-bottom: 60px;
+    }
+    
+    body.settings-open {
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+    }
+    
+    .settings-item:first-child {
+        margin-top: 0;
+    }
+    
+    .settings-item:last-of-type {
         margin-bottom: 20px;
     }
     
-    .settings-item {
-        margin: 15px 0;
-    }
-    
-    .settings-input {
-        font-size: 12px;
-        padding: 10px;
-        width: 100%;
-        box-sizing: border-box;
-        font-size: 16px; /* Prevents zoom on iOS */
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-    }
-    
-    .settings-button {
-        font-size: 10px;
-        padding: 10px 15px;
-        margin: 5px;
-        touch-action: manipulation;
-    }
-    
     .settings-buttons {
-        flex-wrap: wrap;
-        gap: 5px;
+        margin-top: 10px;
     }
     
-    .quote-container {
-        padding: 15px;
+    .server-response {
+        min-height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
         margin: 15px 0;
-        max-width: 95%;
-    }
-    
-    .quote-text {
-        font-size: 10px;
-        line-height: 1.4;
+        padding: 8px;
     }
 }
 
-@media (max-width: 480px) {
-    .game-ui {
-        font-size: 8px;
-    }
-    
-    .title {
-        font-size: 12px;
-    }
-    
-    .joystick-base {
-        width: 100px;
-        height: 100px;
-    }
-    
-    .joystick-stick {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .right-joystick {
-        right: 80px;
-    }
-    
-    .mobile-btn {
-        width: 60px;
-        height: 60px;
-        font-size: 8px;
-    }
-    
-    .joystick-label {
-        font-size: 10px;
-        bottom: -20px;
-    }
-    
-    .lobby-title {
-        font-size: 20px;
-        margin-bottom: 10px;
-    }
-    
-    .lobby-subtitle {
-        font-size: 8px;
-        margin-bottom: 15px;
-    }
-    
-    .lobby-text {
-        font-size: 7px;
-        margin: 5px 0;
-        line-height: 1.3;
-    }
-    
-    .lobby-button {
-        font-size: 10px;
-        padding: 10px 15px;
-        margin: 5px 0;
-        min-height: 44px;
-        touch-action: manipulation;
-    }
-    
-    .lobby-button:active {
-        transform: scale(0.95);
-        transition: transform 0.1s ease;
-    }
-    
+@media (max-width: 360px) {
     .settings-panel {
         width: 98%;
         left: 1%;
-        top: 2%;
-        height: 96%;
-        padding: 15px;
+        top: 1%;
+        height: 98%;
+        padding: 12px;
+        border-radius: 8px;
     }
     
     .settings-title {
@@ -961,243 +859,362 @@ canvas {
         margin-bottom: 15px;
     }
     
-    .settings-input {
+    .settings-item {
+        margin: 15px 0;
+    }
+    
+    .settings-item label {
         font-size: 10px;
-        padding: 8px;
-        font-size: 16px; /* Prevents zoom on iOS */
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        appearance: none;
-    }
-    
-    .settings-button {
-        font-size: 8px;
-        padding: 8px 12px;
-        margin: 3px;
-    }
-    
-    .quote-container {
-        padding: 10px;
-        margin: 10px 0;
-    }
-    
-    .quote-text {
-        font-size: 8px;
-        line-height: 1.3;
-    }
-    
-    .lobby-container {
-        padding: 10px;
-        padding-top: max(10px, env(safe-area-inset-top));
-        padding-bottom: max(10px, env(safe-area-inset-bottom));
-        padding-left: max(10px, env(safe-area-inset-left));
-        padding-right: max(10px, env(safe-area-inset-right));
-    }
-}
-
-@media screen and (orientation: landscape) and (max-height: 500px) {
-    .lobby-container {
-        min-height: 100vh;
-        min-height: 100dvh;
-        justify-content: flex-start;
-        padding: 5px 20px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .lobby-title {
-        font-size: 18px;
-        margin-bottom: 8px;
-    }
-    
-    .lobby-subtitle {
-        font-size: 7px;
-        margin-bottom: 10px;
-    }
-    
-    .lobby-section {
-        margin: 15px 0;
-    }
-    
-    .lobby-text {
-        font-size: 6px;
-        margin: 3px 0;
-        line-height: 1.2;
-    }
-    
-    .lobby-buttons {
-        gap: 8px;
-        margin: 15px 0;
-        flex-direction: row;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-    
-    .lobby-button {
-        font-size: 8px;
-        padding: 8px 16px;
-        margin: 3px;
-        min-width: 120px;
-        max-width: 180px;
-        min-height: 40px;
-    }
-    
-    .quote-container {
-        padding: 8px;
-        margin: 10px 0;
-        max-width: 90%;
-    }
-    
-    .quote-text {
-        font-size: 6px;
-        line-height: 1.2;
-    }
-    
-    .settings-panel {
-        width: 80%;
-        left: 10%;
-        top: 5%;
-        height: 90%;
-        max-height: 90vh;
-        padding: 10px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .settings-title {
-        font-size: 12px;
-        margin-bottom: 10px;
-    }
-    
-    .settings-item {
-        margin: 8px 0;
+        margin-bottom: 6px;
     }
     
     .settings-input {
-        font-size: 16px;
-        padding: 6px;
+        font-size: 14px;
+        padding: 12px;
+        min-height: 48px;
     }
     
     .settings-button {
-        font-size: 7px;
-        padding: 6px 10px;
-        margin: 2px;
-        min-height: 36px;
+        font-size: 8px;
+        padding: 10px 12px;
+        min-height: 44px;
+        min-width: 65px;
+        margin: 4px;
+    }
+    
+    .settings-buttons {
+        gap: 8px;
+    }
+    
+    .lobby-button-close {
+        font-size: 12px;
+        padding: 12px;
+        min-height: 48px;
+        margin-top: 15px;
+    }
+    
+    .server-response {
+        font-size: 11px;
+        margin: 10px 0;
     }
 }
 
-@media screen and (orientation: landscape) and (max-height: 600px) {
-    .mobile-controls {
-        height: 160px;
+@media (hover: none) and (pointer: coarse) {
+    .settings-button:hover {
+        background-color: #ffcc00;
+        transform: none;
     }
     
-    .joystick-container {
-        bottom: 15px;
+    .settings-button:active {
+        background-color: #e6b800;
+        transform: translateY(1px) scale(0.98);
     }
     
-    .joystick-base {
-        width: 100px;
-        height: 100px;
+    .settings-input:focus {
+        border-color: #00ff00;
+        box-shadow: 
+            inset 0 0 10px rgba(0, 0, 0, 0.5),
+            0 0 20px rgba(0, 255, 0, 0.6);
     }
     
-    .joystick-stick {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .mobile-buttons {
-        bottom: 15px;
-        right: 15px;
-    }
-    
-    .mobile-btn {
-        width: 70px;
-        height: 70px;
-        font-size: 9px;
-    }
-    
-    .joystick-label {
-        font-size: 9px;
-        bottom: -18px;
-    }
-    
-    .left-joystick {
-        left: 15px;
-    }
-    
-    .right-joystick {
-        right: 100px;
-    }
-    
-    .game-ui {
-        font-size: 9px;
-        top: 5px;
-        left: 5px;
-        line-height: 1.2;
-    }
-    
-    .title {
-        font-size: 14px;
-        top: 5px;
-        right: 5px;
+    .settings-color {
+        min-width: 80px;
+        min-height: 48px;
     }
 }
 
-@media screen and (orientation: landscape) and (max-width: 900px) and (max-height: 500px) {
+@media (hover: hover) and (pointer: fine) {
+    .settings-button:hover {
+        background-color: #ffd700;
+        transform: translateY(-1px);
+        box-shadow: 0 3px  #000;
+    }
+    
+    .lobby-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 
+            0 6px 20px rgba(0, 255, 255, 0.4),
+            inset 0 0 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .settings-input:hover {
+        border-color: #00ff00;
+    }
+    
+    .settings-color:hover {
+        border-color: #00ff00;
+        box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+    }
+}
+
+@media screen and (max-width: 1024px) and (orientation: portrait) {
+    .settings-panel {
+        width: 90%;
+        left: 5%;
+        transform: translate(0, 0);
+        top: 5%;
+        height: 90%;
+    }
+    
     .lobby-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-areas: 
-            "title title"
-            "subtitle subtitle"
-            "quote quote"
-            "info buttons";
-        gap: 10px;
-        align-items: start;
-        height: 100vh;
-        height: 100dvh;
+        padding: 20px;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+}
+
+@media screen and (max-width: 1024px) and (orientation: landscape) {
+    .settings-panel {
+        width: 70%;
+        left: 15%;
+        height: 85%;
+        top: 7.5%;
     }
     
-    .lobby-title {
-        grid-area: title;
-        text-align: center;
-        margin-bottom: 5px;
+    .mobile-controls {
+        display: block;
+        height: 140px;
     }
-    
-    .lobby-subtitle {
-        grid-area: subtitle;
-        text-align: center;
-        margin-bottom: 8px;
-    }
-    
-    .quote-container {
-        grid-area: quote;
-        margin: 5px 0;
-    }
-    
-    .lobby-section {
-        grid-area: info;
-        margin: 0;
-    }
-    
-    .lobby-buttons {
-        grid-area: buttons;
-        align-self: center;
-        justify-self: center;
-        margin: 0;
+}
+
+@media screen and (min-width: 1025px) {
+    .mobile-controls {
+        display: none !important;
     }
     
     .settings-panel {
-        width: 60%;
-        left: 20%;
-        top: 5%;
-        height: 90%;
-        columns: 2;
-        column-gap: 20px;
+        max-width: 500px;
+        width: auto;
+        min-width: 400px;
     }
     
-    .settings-item {
-        break-inside: avoid;
-        margin: 6px 0;
+    .lobby-container {
+        max-width: 800px;
     }
+}
+
+.device-mobile .game-ui {
+    font-size: 10px;
+    top: 10px;
+    left: 10px;
+}
+
+.device-mobile .title {
+    font-size: 14px;
+    top: 10px;
+    right: 10px;
+}
+
+.device-mobile .controls {
+    display: none;
+}
+
+.device-desktop .mobile-controls,
+.device-desktop .joystick-container,
+.device-desktop .mobile-buttons {
+    display: none !important;
+}
+
+.device-mobile .lobby-container {
+    padding: 15px;
+    max-width: 100%;
+}
+
+.device-tablet .lobby-container {
+    padding: 30px;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.device-desktop .lobby-container {
+    padding: 40px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.has-touch .lobby-button {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.no-touch .lobby-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 20px rgba(0, 255, 255, 0.4),
+        inset 0 0 30px rgba(0, 0, 0, 0.1);
+}
+
+@media screen and (max-device-width: 480px) {
+    .device-mobile .settings-panel {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        width: 100%;
+        left: 0;
+        top: 0;
+        height: 100%;
+        padding: 20px 15px;
+    }
+}
+
+@media (min-device-width: 1025px) {
+    .device-desktop .settings-panel {
+        box-shadow: 
+            0 0 50px rgba(0, 255, 255, 0.4),
+            inset 0 0 20px rgba(0, 0, 0, 0.3),
+            0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+}
+
+.device-mobile .settings-panel {
+    width: 90%;
+    left: 5%;
+    top: 5%;
+    height: 90%;
+    transform: translate(0, 0);
+    position: fixed;
+}
+
+.device-tablet .settings-panel {
+    width: 70%;
+    left: 15%;
+    max-width: 600px;
+}
+
+.device-desktop .settings-panel {
+    width: auto;
+    min-width: 400px;
+    max-width: 500px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.device-mobile .mobile-controls {
+    display: block;
+}
+
+.device-desktop .mobile-controls {
+    display: none !important;
+}
+
+.has-touch .settings-button {
+    min-height: 48px;
+    touch-action: manipulation;
+}
+
+.no-touch .settings-button:hover {
+    background-color: #ffd700;
+    transform: translateY(-1px);
+}
+
+.has-touch .settings-input {
+    font-size: 16px;
+    min-height: 44px;
+}
+
+.device-mobile.portrait .settings-panel {
+    height: 90vh;
+    height: 90dvh;
+}
+
+.device-mobile.landscape .settings-panel {
+    width: 80%;
+    left: 10%;
+    height: 85vh;
+    height: 85dvh;
+}
+
+.device-tablet.landscape .settings-panel {
+    width: 60%;
+    left: 20%;
+    columns: 2;
+    column-gap: 30px;
+}
+
+.device-tablet.landscape .settings-item {
+    break-inside: avoid;
+}
+
+.device-mobile .mobile-controls {
+    display: block !important;
+}
+
+.device-tablet.landscape .mobile-controls {
+    display: block !important;
+    height: 160px;
+}
+
+.device-desktop .mobile-controls {
+    display: none !important;
+}
+
+.device-mobile .settings-input:focus {
+    zoom: 1;
+    -webkit-text-size-adjust: 100%;
+}
+
+.device-desktop .settings-input:focus {
+    border-color: #00ff00;
+    box-shadow: 
+        inset 0 0 10px rgba(0, 0, 0, 0.5),
+        0 0 15px rgba(0, 255, 0, 0.5);
+}
+
+.device-mobile .settings-button:active {
+    background-color: #e6b800;
+    transform: translateY(1px) scale(0.98);
+}
+
+.device-desktop .settings-button:hover {
+    background-color: #ffd700;
+    transform: translateY(-1px);
+    box-shadow: 0 3px #000;
+}
+
+.device-mobile.landscape .lobby-title {
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+.device-mobile.portrait .lobby-title {
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+.device-mobile .settings-color {
+    min-width: 80px;
+    min-height: 48px;
+    cursor: pointer;
+}
+
+.device-desktop .settings-color {
+    width: 60px;
+    height: 40px;
+}
+
+.has-touch * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.device-mobile .settings-panel {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scroll-behavior: smooth;
+}
+
+.device-desktop .settings-panel {
+    box-shadow: 
+        0 0 50px rgba(0, 255, 255, 0.4),
+        inset 0 0 20px rgba(0, 0, 0, 0.3),
+        0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.device-desktop .lobby-button:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease;
 }
