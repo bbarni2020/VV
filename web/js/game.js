@@ -737,11 +737,120 @@ function hideLoadingScreen() {
 
 window.hideLoadingScreen = hideLoadingScreen;
 
+let globalVolume = 0.5;
+let backgroundMusic = null;
+
+function initializeAudio() {
+    const savedVolume = localStorage.getItem('gameVolume');
+    if (savedVolume) {
+        globalVolume = parseFloat(savedVolume);
+        const volumeSlider = document.getElementById('volume');
+        const volumeValue = document.getElementById('volumeValue');
+        if (volumeSlider && volumeValue) {
+            volumeSlider.value = Math.round(globalVolume * 100);
+            volumeValue.textContent = Math.round(globalVolume * 100) + '%';
+        }
+    }
+}
+
+function playBackgroundMusic() {
+    if (!backgroundMusic) {
+        backgroundMusic = new Audio('sound/VV.mp3');
+        backgroundMusic.loop = true;
+    }
+    backgroundMusic.volume = globalVolume;
+    backgroundMusic.play().catch(error => {
+        console.log('Background music play failed:', error);
+    });
+}
+
+function updateBackgroundMusicVolume() {
+    if (backgroundMusic) {
+        backgroundMusic.volume = globalVolume;
+    }
+}
+
+function getGlobalVolume() {
+    return globalVolume;
+}
+
+function playReloadSound() {
+    if (globalVolume > 0) {
+        const reloadSound = new Audio('sound/reload.mp3');
+        reloadSound.volume = globalVolume * 0.7;
+        reloadSound.play().catch(error => {
+            console.log('Reload sound play failed:', error);
+        });
+    }
+}
+
+function playRestoreSound() {
+    if (globalVolume > 0) {
+        const restoreSound = new Audio('sound/restore.mp3');
+        restoreSound.volume = globalVolume * 0.8;
+        restoreSound.play().catch(error => {
+            console.log('Restore sound play failed:', error);
+        });
+    }
+}
+
+function playLowHealthSound() {
+    if (globalVolume > 0) {
+        const lowHealthSound = new Audio('sound/low.mp3');
+        lowHealthSound.volume = globalVolume * 0.6;
+        lowHealthSound.play().catch(error => {
+            console.log('Low health sound play failed:', error);
+        });
+    }
+}
+
+function playDamageSound() {
+    if (globalVolume > 0) {
+        const damageSound = new Audio('sound/damage.wav');
+        damageSound.volume = globalVolume * 0.7;
+        damageSound.play().catch(error => {
+            console.log('Damage sound play failed:', error);
+        });
+    }
+}
+
+function playDeathSound() {
+    if (globalVolume > 0) {
+        const deathSound = new Audio('sound/die.mp3');
+        deathSound.volume = globalVolume * 0.8;
+        deathSound.play().catch(error => {
+            console.log('Death sound play failed:', error);
+        });
+    }
+}
+
+window.getGlobalVolume = getGlobalVolume;
+window.playReloadSound = playReloadSound;
+window.playRestoreSound = playRestoreSound;
+window.playLowHealthSound = playLowHealthSound;
+window.playDamageSound = playDamageSound;
+window.playDeathSound = playDeathSound;
+window.playDamageSound = playDamageSound;
+window.playDeathSound = playDeathSound;
+
 const volumeSlider = document.getElementById('volume');
-volumeSlider.addEventListener('input', (event) => {
-    const volumeValue = event.target.value;
-    console.log(`Volume set to: ${volumeValue}`);
-});
+const volumeValue = document.getElementById('volumeValue');
+
+if (volumeSlider && volumeValue) {
+    volumeSlider.addEventListener('input', (event) => {
+        const volumeLevel = event.target.value / 100;
+        globalVolume = volumeLevel;
+        volumeValue.textContent = event.target.value + '%';
+        localStorage.setItem('gameVolume', globalVolume.toString());
+        updateBackgroundMusicVolume();
+        console.log(`Volume set to: ${Math.round(globalVolume * 100)}%`);
+    });
+}
+
+initializeAudio();
+setTimeout(() => {
+    playBackgroundMusic();
+}, 1000);
 
 requestAnimationFrame(gameLoop);
 
@@ -751,6 +860,7 @@ function resetPlayerState() {
     player.isDead = false;
     player.ammo = player.maxAmmo;
     player.reloadTime = 0;
+    player.lowHealthSoundPlayed = false;
     
 
     const safeSpawn = gameMap.getSafeSpawnPosition(20);

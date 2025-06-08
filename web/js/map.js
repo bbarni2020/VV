@@ -209,9 +209,17 @@ class Map {
                 );
                 
                 if (distance < 25 && player.health < player.maxHealth) {
+                    const oldHealthPercent = player.health / player.maxHealth;
                     player.health = Math.min(player.maxHealth, player.health + 20);
+                    const newHealthPercent = player.health / player.maxHealth;
                     pickup.collected = true;
                     pickup.collectedTime = currentTime;
+                    if (typeof window.playRestoreSound === 'function') {
+                        window.playRestoreSound();
+                    }
+                    if (oldHealthPercent < 0.3 && newHealthPercent >= 0.3) {
+                        player.lowHealthSoundPlayed = false;
+                    }
                 }
             }
         });

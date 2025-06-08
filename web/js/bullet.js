@@ -7,6 +7,21 @@ class Bullet {
         this.maxBounces = 3;
         this.ownerId = ownerId;
         this.hasBounced = false;
+        
+        this.playShootingSound();
+    }
+
+    playShootingSound() {
+        try {
+            const audio = new Audio('sound/shooting.wav');
+            const globalVolume = window.getGlobalVolume ? window.getGlobalVolume() : 0.5;
+            audio.volume = globalVolume * 0.6;
+            audio.play().catch(error => {
+                console.log('Shooting sound play failed:', error);
+            });
+        } catch (error) {
+            console.log('Error creating shooting sound:', error);
+        }
     }
 
     update() {

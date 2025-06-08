@@ -21,6 +21,7 @@ class Player {
         this.maxAmmo = 10;
         this.reloadTime = 0;
         this.reloadDuration = 2000;
+        this.lowHealthSoundPlayed = false;
     }
 
     move(direction, map) {
@@ -94,13 +95,27 @@ class Player {
         if (this.isDead) return false;
         
         const actualDamage = isOwnBullet ? 5 : damage;
+        const oldHealthPercent = this.health / this.maxHealth;
         this.health -= actualDamage;
+        const newHealthPercent = this.health / this.maxHealth;
         
         if (this.health <= 0) {
             this.health = 0;
             this.die();
             return true;
         }
+        
+        if (typeof window.playDamageSound === 'function') {
+            window.playDamageSound();
+        }
+        
+        if (newHealthPercent < 0.3 && oldHealthPercent >= 0.3 && !this.lowHealthSoundPlayed) {
+            this.lowHealthSoundPlayed = true;
+            if (typeof window.playLowHealthSound === 'function') {
+                window.playLowHealthSound();
+            }
+        }
+        
         return false;
     }
 
@@ -108,6 +123,9 @@ class Player {
         this.isDead = true;
         this.deathTime = Date.now();
         this.respawnTimer = this.respawnDelay;
+        if (typeof window.playDeathSound === 'function') {
+            window.playDeathSound();
+        }
     }
 
     respawn(map) {
@@ -120,6 +138,7 @@ class Player {
         this.respawnTimer = 0;
         this.ammo = this.maxAmmo;
         this.reloadTime = 0;
+        this.lowHealthSoundPlayed = false;
     }
 
     update(deltaTime) {
@@ -132,6 +151,9 @@ class Player {
             if (this.reloadTime <= 0) {
                 this.ammo = this.maxAmmo;
                 this.reloadTime = 0;
+                if (typeof window.playReloadSound === 'function') {
+                    window.playReloadSound();
+                }
             }
         }
     }
