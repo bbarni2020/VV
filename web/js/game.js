@@ -192,6 +192,10 @@ function update(deltaTime) {
             
             if (distance < bullets[i].radius + 10) {
                 explosions.push(new Explosion(bullets[i].position.x, bullets[i].position.y));
+                
+                otherPlayer.clientHit = true;
+                otherPlayer.clientHitTime = Date.now();
+                
                 sendPlayerAction({
                     type: 'player_hit',
                     targetId: playerId,
@@ -391,6 +395,10 @@ function drawBackground(ctx, cameraX, cameraY) {
 function drawOtherPlayer(ctx, playerData, cameraX, cameraY) {
     if (playerData.isDead) {
         drawOtherPlayerDeath(ctx, playerData, cameraX, cameraY);
+        return;
+    }
+    
+    if (playerData.clientHit && Date.now() - playerData.clientHitTime < 1000) {
         return;
     }
     

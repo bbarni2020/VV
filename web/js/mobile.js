@@ -8,7 +8,8 @@ class MobileControls {
             startY: 0,
             currentX: 0,
             currentY: 0,
-            maxDistance: 35
+            maxDistance: 35,
+            touchId: null
         };
         
         this.shootingJoystick = {
@@ -21,7 +22,8 @@ class MobileControls {
             currentY: 0,
             maxDistance: 35,
             lastDirectionX: 0,
-            lastDirectionY: -1
+            lastDirectionY: -1,
+            touchId: null
         };
         
         this.buttons = {
@@ -99,12 +101,15 @@ class MobileControls {
             e.stopPropagation();
             this.movementJoystick.active = true;
             
+            const touch = e.touches ? e.touches[0] : e;
+            this.movementJoystick.touchId = touch.identifier || 0;
+            
             const rect = container.getBoundingClientRect();
             this.movementJoystick.startX = rect.left + rect.width / 2;
             this.movementJoystick.startY = rect.top + rect.height / 2;
             
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const clientX = touch.clientX;
+            const clientY = touch.clientY;
             
             this.updateMovementJoystick(clientX, clientY);
         };
@@ -115,13 +120,24 @@ class MobileControls {
             if (!this.movementJoystick.active) return;
             
             if (e.touches) {
+                let foundTouch = false;
                 for (let i = 0; i < e.touches.length; i++) {
                     const touch = e.touches[i];
                     const rect = container.getBoundingClientRect();
                     if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
                         touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
                         this.updateMovementJoystick(touch.clientX, touch.clientY);
+                        foundTouch = true;
                         break;
+                    }
+                }
+                if (!foundTouch && this.movementJoystick.active) {
+                    for (let i = 0; i < e.touches.length; i++) {
+                        const touch = e.touches[i];
+                        if (touch.identifier === this.movementJoystick.touchId) {
+                            this.updateMovementJoystick(touch.clientX, touch.clientY);
+                            break;
+                        }
                     }
                 }
             } else {
@@ -156,12 +172,15 @@ class MobileControls {
             e.stopPropagation();
             this.shootingJoystick.active = true;
             
+            const touch = e.touches ? e.touches[0] : e;
+            this.shootingJoystick.touchId = touch.identifier || 0;
+            
             const rect = container.getBoundingClientRect();
             this.shootingJoystick.startX = rect.left + rect.width / 2;
             this.shootingJoystick.startY = rect.top + rect.height / 2;
             
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const clientX = touch.clientX;
+            const clientY = touch.clientY;
             
             this.updateShootingJoystick(clientX, clientY);
             
@@ -174,13 +193,24 @@ class MobileControls {
             if (!this.shootingJoystick.active) return;
             
             if (e.touches) {
+                let foundTouch = false;
                 for (let i = 0; i < e.touches.length; i++) {
                     const touch = e.touches[i];
                     const rect = container.getBoundingClientRect();
                     if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
                         touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
                         this.updateShootingJoystick(touch.clientX, touch.clientY);
+                        foundTouch = true;
                         break;
+                    }
+                }
+                if (!foundTouch && this.shootingJoystick.active) {
+                    for (let i = 0; i < e.touches.length; i++) {
+                        const touch = e.touches[i];
+                        if (touch.identifier === this.shootingJoystick.touchId) {
+                            this.updateShootingJoystick(touch.clientX, touch.clientY);
+                            break;
+                        }
                     }
                 }
             } else {

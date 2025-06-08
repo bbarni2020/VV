@@ -1085,3 +1085,119 @@ canvas {
         min-height: 36px;
     }
 }
+
+@media screen and (orientation: landscape) and (max-height: 600px) {
+    .mobile-controls {
+        height: 160px;
+    }
+    
+    .joystick-container {
+        bottom: 15px;
+    }
+    
+    .joystick-base {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .joystick-stick {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .mobile-buttons {
+        bottom: 15px;
+        right: 15px;
+    }
+    
+    .mobile-btn {
+        width: 70px;
+        height: 70px;
+        font-size: 9px;
+    }
+    
+    .joystick-label {
+        font-size: 9px;
+        bottom: -18px;
+    }
+    
+    .left-joystick {
+        left: 15px;
+    }
+    
+    .right-joystick {
+        right: 100px;
+    }
+    
+    .game-ui {
+        font-size: 9px;
+        top: 5px;
+        left: 5px;
+        line-height: 1.2;
+    }
+    
+    .title {
+        font-size: 14px;
+        top: 5px;
+        right: 5px;
+    }
+}
+
+@media screen and (orientation: landscape) and (max-width: 900px) and (max-height: 500px) {
+    .lobby-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: 
+            "title title"
+            "subtitle subtitle"
+            "quote quote"
+            "info buttons";
+        gap: 10px;
+        align-items: start;
+        height: 100vh;
+        height: 100dvh;
+    }
+    
+    .lobby-title {
+        grid-area: title;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+    
+    .lobby-subtitle {
+        grid-area: subtitle;
+        text-align: center;
+        margin-bottom: 8px;
+    }
+    
+    .quote-container {
+        grid-area: quote;
+        margin: 5px 0;
+    }
+    
+    .lobby-section {
+        grid-area: info;
+        margin: 0;
+    }
+    
+    .lobby-buttons {
+        grid-area: buttons;
+        align-self: center;
+        justify-self: center;
+        margin: 0;
+    }
+    
+    .settings-panel {
+        width: 60%;
+        left: 20%;
+        top: 5%;
+        height: 90%;
+        columns: 2;
+        column-gap: 20px;
+    }
+    
+    .settings-item {
+        break-inside: avoid;
+        margin: 6px 0;
+    }
+}

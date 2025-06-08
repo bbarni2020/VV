@@ -115,12 +115,19 @@ def is_client_connected(sid):
             return False
         
         session = player_sessions[sid]
-        current_time = time.time() * 1000
+        player_id = session.get('playerId')
         
-        if current_time - session.get('connect_time', 0) < 30000:
-            return True
+        if player_id and player_id in players_data:
+            current_time = time.time() * 1000
+            last_update = players_data[player_id].get('lastUpdate', 0)
+            if current_time - last_update > 30000:
+                return False
+        
+        try:
+            return socketio.server.manager.is_connected(sid, namespace='/')
+        except:
+            return False
             
-        return socketio.server.manager.is_connected(sid, namespace='/')
     except Exception as e:
         logger.error(f"Error checking client connection for {sid}: {str(e)}")
         return False
@@ -131,20 +138,33 @@ def cleanup_stale_players():
     stale_sessions = []
     
     for player_id, data in players_data.items():
-        if current_time - data.get('lastUpdate', 0) > 120000:
+        last_update = data.get('lastUpdate', 0)
+        if current_time - last_update > 30000:
             stale_players.append(player_id)
     
     for sid, session in player_sessions.items():
-        session_age = current_time - session.get('connect_time', 0)
-        if session_age > 30000 and not is_client_connected(sid):
+        if not is_client_connected(sid):
             stale_sessions.append(sid)
     
     for player_id in stale_players:
         try:
             if player_id in players_data:
+                player_sid = None
+                for sid, session in player_sessions.items():
+                    if session.get('playerId') == player_id:
+                        player_sid = sid
+                        break
+                
                 del players_data[player_id]
                 safe_emit('player_disconnected', {'playerId': player_id}, broadcast=True)
-                logger.info(f'Removed stale player: {player_id}')
+                logger.info(f'Removed inactive player: {player_id} (last update: {current_time - players_data.get(player_id, {}).get("lastUpdate", current_time)}ms ago)')
+                
+                if player_sid and player_sid in player_sessions:
+                    session = player_sessions[player_sid]
+                    if session.get('token') and session['token'] in player_tokens:
+                        del player_tokens[session['token']]
+                    del player_sessions[player_sid]
+                    
         except Exception as e:
             logger.error(f'Error removing stale player {player_id}: {str(e)}')
     
@@ -152,10 +172,17 @@ def cleanup_stale_players():
         try:
             if sid in player_sessions:
                 session = player_sessions[sid]
+                player_id = session.get('playerId')
+                
+                if player_id and player_id in players_data:
+                    del players_data[player_id]
+                    safe_emit('player_disconnected', {'playerId': player_id}, broadcast=True)
+                    logger.info(f'Removed disconnected player: {player_id}')
+                
                 if session.get('token') and session['token'] in player_tokens:
                     del player_tokens[session['token']]
                 del player_sessions[sid]
-                logger.info(f'Cleaned up stale session: {sid}')
+                logger.info(f'Cleaned up disconnected session: {sid}')
         except Exception as e:
             logger.error(f'Error cleaning up session {sid}: {str(e)}')
 
@@ -233,7 +260,7 @@ def start_cleanup_timer():
     def cleanup_loop():
         while True:
             try:
-                time.sleep(5)
+                time.sleep(10)
                 cleanup_stale_players()
                 update_health_pickups()
                 
@@ -244,9 +271,56 @@ def start_cleanup_timer():
                 logger.error(f'Error in cleanup loop: {str(e)}')
                 time.sleep(10)
     
+    def player_check_loop():
+        while True:
+            try:
+                time.sleep(60)
+                check_all_players_connectivity()
+            except Exception as e:
+                logger.error(f'Error in player check loop: {str(e)}')
+                time.sleep(60)
+    
     cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
     cleanup_thread.start()
-    logger.info('Cleanup timer started')
+    
+    player_check_thread = threading.Thread(target=player_check_loop, daemon=True)
+    player_check_thread.start()
+    
+    logger.info('Cleanup timer started - checking players every 10 seconds, full connectivity check every 60 seconds')
+
+def check_all_players_connectivity():
+    current_time = time.time() * 1000
+    disconnected_players = []
+    
+    for player_id, player_data in players_data.items():
+        last_update = player_data.get('lastUpdate', 0)
+        time_since_update = current_time - last_update
+        
+        if time_since_update > 30000:
+            disconnected_players.append(player_id)
+            logger.info(f'Player {player_id} marked for removal - no updates for {time_since_update}ms')
+    
+    for player_id in disconnected_players:
+        try:
+            if player_id in players_data:
+                player_sid = None
+                for sid, session in player_sessions.items():
+                    if session.get('playerId') == player_id:
+                        player_sid = sid
+                        break
+                
+                del players_data[player_id]
+                safe_emit('player_disconnected', {'playerId': player_id}, broadcast=True)
+                logger.info(f'Removed inactive player during connectivity check: {player_id}')
+                
+                if player_sid and player_sid in player_sessions:
+                    session = player_sessions[player_sid]
+                    if session.get('token') and session['token'] in player_tokens:
+                        del player_tokens[session['token']]
+                    del player_sessions[player_sid]
+                    
+        except Exception as e:
+            logger.error(f'Error removing player {player_id} during connectivity check: {str(e)}')
 
 start_cleanup_timer()
 
@@ -453,6 +527,10 @@ def validate_player_request(data):
         if data.get('token') != session.get('token'):
             logger.debug(f'Validation failed for {request.sid}: Token mismatch')
             return False, 'Invalid token'
+        
+        player_id = data.get('playerId')
+        if player_id and player_id in players_data:
+            players_data[player_id]['lastUpdate'] = time.time() * 1000
         
         timestamp = data.get('timestamp')
         if not timestamp or abs(time.time() * 1000 - timestamp) > 30000:
