@@ -21,6 +21,7 @@ limiter = Limiter(
     default_limits=["1 per minute"]
 )
 
+
 CORS(app)
 
 @app.route('/auth', methods=['POST'])
@@ -81,7 +82,7 @@ def edit_color():
 def delete():
     address = request.remote_addr
     try:
-        cur.execute("DELETE FROM users WHERE ip = ?", (address))
+        cur.execute("DELETE FROM users WHERE ip = ?", (address,))
         conn.commit()
         return jsonify({'status': 'success'}), 200
     except Exception as e:
@@ -116,9 +117,18 @@ def get_quote():
         )
         if response.status_code == 200:
             data = response.json()
-            cache['data'] = data['choices'][0]['message']['content']
+            content = data['choices'][0]['message']['content']
+            import re
+            content = re.sub(r'<think>[\s\S]*?</think>', '', content, flags=re.IGNORECASE)
+            matches = re.findall(r'"([^"]+)"', content)
+            if matches:
+                quote = matches[-1].strip()
+            else:
+                lines = [line.strip() for line in content.splitlines() if line.strip()]
+                quote = lines[-1] if lines else ''
+            cache['data'] = quote
             cache['timestamp'] = current_time
-            return jsonify({'quote': data['choices'][0]['message']['content']}), 200
+            return jsonify({'quote': quote}), 200
         else:
             return jsonify({'error': 'Falied to fetch quote'}), response.status_code
     except Exception as e:
