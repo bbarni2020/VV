@@ -182,7 +182,7 @@
                         localStorage.setItem('playerColor', data.color);
                         document.getElementById('serverResponse').innerText = 'User data fetched successfully!';
                     } else {
-                        document.getElementById('serverResponse').innerText = 'No user data found.';
+                        document.getElementById('serverResponse').innerText = 'No user data found. (or nest might be messing with you)';
                     }
                     setTimeout(() => {
                         document.getElementById('serverResponse').innerText = '';
