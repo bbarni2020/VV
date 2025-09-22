@@ -84,12 +84,6 @@ If you're deploying your own:
 - Update the server URLs in the frontend
 - The game expects CORS to be enabled (it is by default)
 
-## To-Do List
-- [ ] Better mobile controls
-- [ ] More maps (current one gets old)
-- [ ] Spectator mode
-- [ ] Maybe some kind of scoring system?
-- [ ] Fix that weird bug where sometimes bullets don't register
 
 ## Contributing
 
@@ -98,5 +92,6 @@ If you want to add something or fix my terrible code, go for it. Just don't judg
 ## License
 
 Do whatever you want with this. If it breaks, you get to keep both pieces.
+
 
 
